@@ -26,6 +26,8 @@ function initDatabase() {
       supervisor_id INTEGER,
       active INTEGER DEFAULT 1,
       password TEXT,
+      categories TEXT,
+      expected_weekly_hours REAL DEFAULT 40.0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -50,6 +52,19 @@ function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_checkins_user ON checkins(user_id);
     CREATE INDEX IF NOT EXISTS idx_sessions_phone ON sessions(phone);
   `);
+
+  // Migração: adicionar colunas se não existirem (para bancos existentes)
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN categories TEXT`);
+  } catch (e) {
+    // Coluna já existe
+  }
+
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN expected_weekly_hours REAL DEFAULT 40.0`);
+  } catch (e) {
+    // Coluna já existe
+  }
 
   // Seed minimal users if none exist
   const result = db.prepare('SELECT COUNT(*) as c FROM users').get();
@@ -83,10 +98,31 @@ const UserDB = {
   /**
    * Create a new user
    */
-  create(name, phone, role, password = null) {
-    const stmt = db.prepare('INSERT OR IGNORE INTO users (name, phone, role, password) VALUES (?, ?, ?, ?)');
-    stmt.run(name, phone, role, password);
+  create(name, phone, role, password = null, categories = null, expectedWeeklyHours = 40.0) {
+    const categoriesStr = Array.isArray(categories) ? categories.join(',') : categories;
+    const stmt = db.prepare(`
+      INSERT OR IGNORE INTO users (name, phone, role, password, categories, expected_weekly_hours)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(name, phone, role, password, categoriesStr, expectedWeeklyHours);
     return this.findByPhone(phone);
+  },
+
+  /**
+   * Update user categories
+   */
+  updateCategories(userId, categories) {
+    const categoriesStr = Array.isArray(categories) ? categories.join(',') : categories;
+    const stmt = db.prepare('UPDATE users SET categories = ? WHERE id = ?');
+    return stmt.run(categoriesStr, userId);
+  },
+
+  /**
+   * Update expected weekly hours
+   */
+  updateExpectedHours(userId, hours) {
+    const stmt = db.prepare('UPDATE users SET expected_weekly_hours = ? WHERE id = ?');
+    return stmt.run(hours, userId);
   },
 
   /**
@@ -94,11 +130,24 @@ const UserDB = {
    */
   search(query, limit = 15) {
     return db.prepare(`
-      SELECT id, name, phone, role, active
+      SELECT id, name, phone, role, active, categories, expected_weekly_hours
       FROM users
       WHERE name LIKE '%' || ? || '%' OR phone LIKE '%' || ? || '%'
       LIMIT ?
     `).all(query, query, limit);
+  },
+
+  /**
+   * Search users by name only (for managers/supervisors)
+   */
+  searchByName(query, limit = 15) {
+    return db.prepare(`
+      SELECT id, name, phone, role, active, categories, expected_weekly_hours
+      FROM users
+      WHERE name LIKE '%' || ? || '%'
+      ORDER BY name ASC
+      LIMIT ?
+    `).all(query, limit);
   },
 
   /**

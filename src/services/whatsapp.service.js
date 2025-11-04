@@ -39,11 +39,112 @@ async function sendWhatsAppMessage(toPhone, message) {
  */
 const MessageTemplates = {
   /**
+   * Registration Step Messages - Sistema de cadastro amigável
+   */
+  registration: {
+    /**
+     * Step 1: Boas-vindas e pedir nome
+     */
+    step1_welcome() {
+      return `👋 *Olá! Bem-vindo ao BotCheckin!*\n\nVejo que você ainda não está cadastrado.\nVamos fazer seu cadastro em *4 passos simples*! 😊\n\n📝 *PASSO 1 de 4*\nPor favor, me diga seu *nome completo*:\n\n💡 _Exemplo: João Silva_`;
+    },
+
+    /**
+     * Step 2: Escolher cargo
+     */
+    step2_chooseRole(name) {
+      return `✅ Prazer em conhecê-lo(a), *${name}*!\n\n📝 *PASSO 2 de 4*\nAgora, selecione seu tipo de acesso:\n\n1️⃣ *Funcionário* - Fazer check-in/out\n2️⃣ *Gerente* - Gerenciar horários da equipe\n3️⃣ *Supervisor* - Acompanhar equipe\n\nEnvie o *número* da sua opção (1, 2 ou 3):`;
+    },
+
+    /**
+     * Step 3: Escolher categorias
+     */
+    step3_chooseCategories(name, role) {
+      const roleText = role === 'manager' ? 'Gerente' : role === 'supervisor' ? 'Supervisor' : 'Funcionário';
+      return `🎯 *PASSO 3 de 4*\nÓtimo, ${name}! Agora me diga em qual(is) categoria(s) você trabalha:\n\n1️⃣ Bar 🍺\n2️⃣ Restaurante 🍽️\n3️⃣ Padaria 🥖\n4️⃣ Café ☕\n5️⃣ Lanchonete 🍔\n6️⃣ Outro\n\n💡 _Você pode escolher múltiplas categorias!_\n_Exemplos:_ "1" ou "1,2" ou "1 3 5"`;
+    },
+
+    /**
+     * Step 4: Pedir senha para admin
+     */
+    step4_askPassword(name, role) {
+      const roleText = role === 'manager' ? 'Gerente' : 'Supervisor';
+      return `🔐 *PASSO 4 de 4*\nPara cargos administrativos (${roleText}), é necessária uma senha de autorização.\n\nPor favor, *envie a senha* fornecida pela empresa:\n\n💡 _Se você não possui a senha, entre em contato com seu gerente_`;
+    },
+
+    /**
+     * Erro: Nome inválido
+     */
+    invalidName() {
+      return `❌ *Nome inválido*\n\nPor favor, digite um nome válido com pelo menos 2 caracteres.\n\n💡 _Exemplo: Maria Santos_`;
+    },
+
+    /**
+     * Erro: Opção de cargo inválida
+     */
+    invalidRole() {
+      return `❌ *Opção inválida*\n\nPor favor, escolha uma das opções:\n\n1️⃣ Funcionário\n2️⃣ Gerente\n3️⃣ Supervisor\n\nEnvie apenas o *número* (1, 2 ou 3):`;
+    },
+
+    /**
+     * Erro: Categoria inválida
+     */
+    invalidCategory() {
+      return `❌ *Categoria inválida*\n\nPor favor, escolha pelo menos uma categoria válida:\n\n1️⃣ Bar\n2️⃣ Restaurante\n3️⃣ Padaria\n4️⃣ Café\n5️⃣ Lanchonete\n6️⃣ Outro\n\n💡 _Pode escolher várias:_ "1,2,3"`;
+    },
+
+    /**
+     * Erro: Senha incorreta
+     */
+    wrongPassword() {
+      return `🔒 *Senha incorreta*\n\nPor favor, tente novamente ou entre em contato com seu gerente para obter a senha correta.\n\n💡 _Digite a senha ou envie CANCELAR para desistir_`;
+    },
+
+    /**
+     * Usuário já existe
+     */
+    userAlreadyExists(name, role) {
+      const roleText = role === 'manager' ? 'Gerente' : role === 'supervisor' ? 'Supervisor' : 'Funcionário';
+      return `👤 *Olá, ${name}!*\n\n✅ Você já está cadastrado como *${roleText}*!\n\nEnvie *MENU* para ver suas opções.`;
+    },
+
+    /**
+     * Cadastro cancelado
+     */
+    cancelled() {
+      return `❌ *Cadastro cancelado*\n\nTudo bem! Quando quiser se cadastrar, é só me enviar uma mensagem novamente! 😊`;
+    },
+
+    /**
+     * Sessão de cadastro expirada
+     */
+    expired() {
+      return `⏱️ *Tempo esgotado*\n\nO processo de cadastro expirou por inatividade.\n\nPara começar novamente, envie qualquer mensagem! 😊`;
+    }
+  },
+
+  /**
    * Welcome message after registration
    */
-  welcome(name, role) {
+  welcome(name, role, categories = []) {
     const emoji = role === 'manager' ? '👔' : role === 'supervisor' ? '👨‍💼' : '👤';
-    return `${emoji} Bem-vindo(a), ${name}!\n\n✅ Seu cadastro foi realizado com sucesso como *${role}*.\n\nVocê já está logado e pronto para começar!`;
+    const roleText = role === 'manager' ? 'Gerente' : role === 'supervisor' ? 'Supervisor' : 'Funcionário';
+
+    let categoryText = '';
+    if (categories && categories.length > 0) {
+      const catEmojis = {
+        'bar': '🍺',
+        'restaurante': '🍽️',
+        'padaria': '🥖',
+        'cafe': '☕',
+        'lanchonete': '🍔',
+        'outro': '📋'
+      };
+      const catList = categories.map(c => `${catEmojis[c] || '📋'} ${c.charAt(0).toUpperCase() + c.slice(1)}`).join(', ');
+      categoryText = `\n🎯 Categoria(s): ${catList}`;
+    }
+
+    return `${emoji} *Bem-vindo(a), ${name}!*\n\n✅ Seu cadastro foi realizado com sucesso como *${roleText}*!${categoryText}\n\nVocê já está logado e pronto para começar! 🎉`;
   },
 
   /**
@@ -68,28 +169,40 @@ const MessageTemplates = {
   },
 
   /**
-   * Checkin confirmation
+   * Checkin confirmation - Mensagens alegres e motivadoras
    */
-  checkinConfirmation(type, location = null) {
-    const icons = {
-      checkin: '🟢',
-      break: '🟡',
-      return: '🔵',
-      checkout: '🔴'
-    };
+  checkinConfirmation(type, location = null, userName = '') {
+    const now = new Date();
+    const hour = now.getHours();
+    const timeStr = now.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+    const locationText = location ? `\n📍 ${location}` : '';
 
-    const texts = {
-      checkin: 'Check-in registrado',
-      break: 'Pausa iniciada',
-      return: 'Retorno registrado',
-      checkout: 'Check-out realizado'
-    };
+    // Mensagens personalizadas e alegres para cada tipo
+    if (type === 'checkin') {
+      const greetings = [
+        `🟢 *Ótimo dia de trabalho, ${userName}!*\n\nSeu check-in foi registrado às ${timeStr}${locationText}\n\n💪 Vamos com tudo hoje! Sucesso! ✨`,
+        `🟢 *Bem-vindo(a) de volta!*\n\nCheck-in registrado às ${timeStr}${locationText}\n\n☀️ Que seu dia seja produtivo e cheio de conquistas!`,
+        `🟢 *Check-in confirmado!*\n\n⏰ ${timeStr}${locationText}\n\n🌟 Comece o dia com energia! Você é incrível!`
+      ];
+      return greetings[Math.floor(Math.random() * greetings.length)];
+    }
 
-    const icon = icons[type] || '✅';
-    const text = texts[type] || 'Ação registrada';
-    const locationText = location ? `\n📍 Local: ${location}` : '';
+    if (type === 'break') {
+      return `🟡 *Pausa iniciada!*\n\n⏰ ${timeStr}${locationText}\n\n😌 Aproveite para descansar! Você merece! ☕`;
+    }
 
-    return `${icon} *${text}!*${locationText}\n\n⏰ Horário: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`;
+    if (type === 'return') {
+      return `🔵 *Bem-vindo(a) de volta!*\n\n⏰ Retorno registrado às ${timeStr}${locationText}\n\n💪 Renovado(a) e pronto(a) para continuar! Vamos lá!`;
+    }
+
+    if (type === 'checkout') {
+      const farewell = hour >= 18
+        ? `🔴 *Ótimo trabalho hoje!*\n\n⏰ Check-out registrado às ${timeStr}${locationText}\n\n✨ Descanse bem! Você fez um excelente trabalho! 🎉\n💝 Até amanhã!`
+        : `🔴 *Check-out registrado!*\n\n⏰ ${timeStr}${locationText}\n\n😊 Tenha um excelente resto de dia!\n🌟 Obrigado pelo seu trabalho!`;
+      return farewell;
+    }
+
+    return `✅ *Ação registrada!*\n\n⏰ ${timeStr}${locationText}`;
   },
 
   /**
@@ -128,7 +241,7 @@ const MessageTemplates = {
    * Manager menu
    */
   managerMenu(name) {
-    return `👔 *Olá, Gerente ${name}!*\n\n📋 Painel de Gestão:\n\n1️⃣ Ver Todos os Horários\n2️⃣ Pesquisar Usuário\n3️⃣ Corrigir Horário\n4️⃣ Meu Check-in\n5️⃣ Status Geral\n6️⃣ Sair\n\n💡 _Envie o número ou comando_`;
+    return `👔 *Olá, Gerente ${name}!*\n\n📋 Painel de Gestão:\n\n1️⃣ Ver Todos os Horários\n2️⃣ Buscar Usuário\n3️⃣ Definir Horas Semanais\n4️⃣ Editar Categorias\n5️⃣ Meu Check-in\n6️⃣ Status Geral\n7️⃣ Sair\n\n💡 _Envie apenas o número_`;
   },
 
   /**
@@ -366,6 +479,93 @@ const MessageTemplates = {
 
     addError() {
       return '❌ *Erro ao Adicionar*\n\nVerifique os dados e tente novamente.';
+    }
+  },
+
+  /**
+   * Conversational templates - Busca de usuários
+   */
+  conversation: {
+    // Busca de usuário
+    searchUser_start() {
+      return `🔍 *Buscar Usuário*\n\nDigite o *nome* (ou parte do nome) da pessoa que você procura:\n\n💡 _Exemplo: João_ ou _Maria_\n\nEnvie *CANCELAR* para voltar.`;
+    },
+
+    searchUser_results(results, searchTerm) {
+      const lines = [`🔍 *Resultados para "${searchTerm}":*\n`];
+
+      results.forEach((user, index) => {
+        const roleEmoji = user.role === 'manager' ? '👔' : user.role === 'supervisor' ? '👨‍💼' : '👤';
+        const categories = user.categories ? ` | ${user.categories}` : '';
+        lines.push(`${index + 1}️⃣ ${roleEmoji} *${user.name}*`);
+        lines.push(`   📱 ${user.phone}${categories}`);
+        if (user.expected_weekly_hours) {
+          lines.push(`   ⏰ ${user.expected_weekly_hours}h/semana`);
+        }
+      });
+
+      lines.push(`\n💡 _Digite o número do usuário (1-${results.length}):_`);
+      lines.push(`Ou *CANCELAR* para voltar`);
+
+      return lines.join('\n');
+    },
+
+    searchUser_selected(user) {
+      const roleText = user.role === 'manager' ? 'Gerente' : user.role === 'supervisor' ? 'Supervisor' : 'Funcionário';
+      const roleEmoji = user.role === 'manager' ? '👔' : user.role === 'supervisor' ? '👨‍💼' : '👤';
+      const categories = user.categories ? `\n🎯 Categorias: ${user.categories}` : '';
+      const hours = user.expected_weekly_hours ? `\n⏰ Horas esperadas: ${user.expected_weekly_hours}h/semana` : '';
+
+      return `${roleEmoji} *${user.name}*\n\n📋 ${roleText}\n📱 ${user.phone}${categories}${hours}`;
+    },
+
+    searchUser_noResults(searchTerm) {
+      return `🔍 *Nenhum resultado*\n\nNão encontrei ninguém com "${searchTerm}".\n\nTente novamente com outro nome ou envie *CANCELAR*.`;
+    },
+
+    // Definir horas esperadas
+    setHours_start() {
+      return `⏰ *Definir Horas Semanais*\n\nPrimeiro, vamos encontrar o funcionário.\n\nDigite o *nome* da pessoa:\n\n💡 _Exemplo: João_`;
+    },
+
+    setHours_askHours(userName) {
+      return `⏰ *Definir Horas para ${userName}*\n\nQuantas horas por semana são esperadas?\n\n💡 _Exemplos:_\n• 40 (tempo integral)\n• 20 (meio período)\n• 44 (com horas extras)\n\nDigite o número de horas:`;
+    },
+
+    setHours_success(userName, hours) {
+      return `✅ *Horas definidas!*\n\n${userName} agora tem *${hours} horas/semana* esperadas.\n\n⏰ O sistema poderá calcular cumprimento de horas.`;
+    },
+
+    // Editar categorias
+    editCategory_start() {
+      return `🎯 *Editar Categorias*\n\nPrimeiro, vamos encontrar o usuário.\n\nDigite o *nome* da pessoa:\n\n💡 _Exemplo: Maria_`;
+    },
+
+    editCategory_askCategories(userName, currentCategories) {
+      const current = currentCategories && currentCategories.length > 0
+        ? `\n📋 Categorias atuais: ${currentCategories.join(', ')}`
+        : '';
+
+      return `🎯 *Editar Categorias de ${userName}*${current}\n\nEscolha as novas categorias:\n\n1️⃣ Bar 🍺\n2️⃣ Restaurante 🍽️\n3️⃣ Padaria 🥖\n4️⃣ Café ☕\n5️⃣ Lanchonete 🍔\n6️⃣ Outro\n\n💡 _Pode escolher várias:_ "1,2" ou "1 3 5"`;
+    },
+
+    editCategory_success(userName, categories) {
+      const catEmojis = {
+        'bar': '🍺',
+        'restaurante': '🍽️',
+        'padaria': '🥖',
+        'cafe': '☕',
+        'lanchonete': '🍔',
+        'outro': '📋'
+      };
+      const catList = categories.map(c => `${catEmojis[c] || '📋'} ${c.charAt(0).toUpperCase() + c.slice(1)}`).join(', ');
+
+      return `✅ *Categorias atualizadas!*\n\n${userName} agora está em:\n${catList}`;
+    },
+
+    // Cancelamento
+    cancelled() {
+      return `❌ *Operação cancelada*\n\nVoltando ao menu principal.`;
     }
   }
 };

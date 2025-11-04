@@ -6,21 +6,21 @@ describe('WhatsApp Service', () => {
       it('should generate welcome message for staff', () => {
         const message = MessageTemplates.welcome('John', 'staff');
         expect(message).toContain('John');
-        expect(message).toContain('staff');
+        expect(message).toContain('Funcionário');
         expect(message).toContain('Bem-vindo');
       });
 
       it('should generate welcome message for manager', () => {
         const message = MessageTemplates.welcome('Jane', 'manager');
         expect(message).toContain('Jane');
-        expect(message).toContain('manager');
+        expect(message).toContain('Gerente');
         expect(message).toContain('👔');
       });
 
       it('should generate welcome message for supervisor', () => {
         const message = MessageTemplates.welcome('Bob', 'supervisor');
         expect(message).toContain('Bob');
-        expect(message).toContain('supervisor');
+        expect(message).toContain('Supervisor');
         expect(message).toContain('👨‍💼');
       });
     });
@@ -44,29 +44,31 @@ describe('WhatsApp Service', () => {
 
     describe('checkinConfirmation', () => {
       it('should generate check-in confirmation without location', () => {
-        const message = MessageTemplates.checkinConfirmation('checkin');
-        expect(message).toContain('Check-in');
+        const message = MessageTemplates.checkinConfirmation('checkin', null, 'João');
+        // Check-in messages are now cheerful and randomized
         expect(message).toContain('🟢');
-        expect(message).not.toContain('📍');
+        expect(message).toMatch(/registrado|confirmado|dia|energia/i); // Should be a positive checkin message
+        expect(message).toMatch(/\d{2}:\d{2}/); // Should contain time
       });
 
       it('should generate break confirmation with location', () => {
-        const message = MessageTemplates.checkinConfirmation('break', 'Office');
+        const message = MessageTemplates.checkinConfirmation('break', 'Office', 'Maria');
         expect(message).toContain('Pausa');
         expect(message).toContain('🟡');
         expect(message).toContain('Office');
       });
 
       it('should generate return confirmation', () => {
-        const message = MessageTemplates.checkinConfirmation('return');
+        const message = MessageTemplates.checkinConfirmation('return', null, 'Pedro');
         expect(message).toContain('Retorno');
         expect(message).toContain('🔵');
       });
 
       it('should generate checkout confirmation', () => {
-        const message = MessageTemplates.checkinConfirmation('checkout');
-        expect(message).toContain('Check-out');
+        const message = MessageTemplates.checkinConfirmation('checkout', null, 'Ana');
+        // Checkout messages are now cheerful and may not contain "Check-out" word
         expect(message).toContain('🔴');
+        expect(message).toMatch(/registrado|trabalho/i); // Should mention work
       });
     });
 

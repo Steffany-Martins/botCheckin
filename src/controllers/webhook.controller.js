@@ -2,7 +2,10 @@ const { normalizePhone, twimlMessage } = require('../utils/helpers');
 const { UserDB } = require('../services/database.service');
 const authService = require('../services/auth.service');
 const checkinService = require('../services/checkin.service');
+const registrationService = require('../services/registration.service');
+const conversationService = require('../services/conversation.service');
 const { MessageTemplates, getMenuForRole } = require('../services/whatsapp.service');
+const config = require('../config/env');
 
 /**
  * Command mapping for numeric menu options
@@ -18,11 +21,12 @@ const COMMAND_MAP = {
   },
   manager: {
     '1': 'ALL_SCHEDULES',
-    '2': 'SEARCH',
-    '3': 'EDIT_TIME',
-    '4': 'MY_CHECKIN',
-    '5': 'STATUS',
-    '6': 'LOGOUT'
+    '2': 'SEARCH_USER',
+    '3': 'SET_HOURS',
+    '4': 'EDIT_CATEGORY',
+    '5': 'MY_CHECKIN',
+    '6': 'STATUS',
+    '7': 'LOGOUT'
   },
   supervisor: {
     '1': 'TEAM_ACTIVE',
@@ -107,7 +111,7 @@ async function handleCheckinAction(req, res, user, action, tokens) {
   const location = tokens.slice(1).join(' ') || null;
   await checkinService.recordCheckin(user, action.toLowerCase(), location);
 
-  const confirmMsg = MessageTemplates.checkinConfirmation(action.toLowerCase(), location);
+  const confirmMsg = MessageTemplates.checkinConfirmation(action.toLowerCase(), location, user.name);
   const menu = getMenuForRole(user.role, user.name);
   res.type('text/xml').send(twimlMessage(confirmMsg + '\n\n' + menu));
 }
@@ -263,6 +267,340 @@ async function handleMenu(req, res, user) {
 }
 
 /**
+ * Handle conversation steps process
+ */
+async function handleConversationSteps(req, res, from, body, user) {
+  const state = conversationService.getConversationState(from);
+
+  if (!state) {
+    // Estado não encontrado, enviar menu
+    const menu = getMenuForRole(user.role, user.name);
+    return res.type('text/xml').send(twimlMessage(menu));
+  }
+
+  // Permitir cancelamento em qualquer step
+  if (body.toUpperCase() === 'CANCELAR') {
+    conversationService.cancelConversation(from);
+    const message = '❌ Operação cancelada.\n\n';
+    const menu = getMenuForRole(user.role, user.name);
+    return res.type('text/xml').send(twimlMessage(message + menu));
+  }
+
+  // Processar de acordo com o tipo de conversa
+  if (state.type === 'search_user') {
+    return handleSearchUserConversation(req, res, from, body, user, state);
+  }
+
+  if (state.type === 'set_hours') {
+    return handleSetHoursConversation(req, res, from, body, user, state);
+  }
+
+  if (state.type === 'edit_category') {
+    return handleEditCategoryConversation(req, res, from, body, user, state);
+  }
+
+  // Tipo desconhecido, cancelar
+  conversationService.cancelConversation(from);
+  const menu = getMenuForRole(user.role, user.name);
+  return res.type('text/xml').send(twimlMessage(menu));
+}
+
+/**
+ * Handle search user conversation
+ */
+async function handleSearchUserConversation(req, res, from, body, user, state) {
+  const menu = getMenuForRole(user.role, user.name);
+
+  if (state.step === 1) {
+    // Step 1: Receber nome para busca
+    const result = conversationService.processSearchUser_Step1(from, body);
+
+    if (result.error === 'SEARCH_TOO_SHORT') {
+      const message = result.message;
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    if (result.error === 'NO_RESULTS') {
+      const message = result.message + '\n\nTente novamente ou envie *CANCELAR*.';
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    // Mostrar resultados
+    const message = MessageTemplates.conversation.searchUser_results(result.results, result.searchTerm);
+    return res.type('text/xml').send(twimlMessage(message));
+  }
+
+  if (state.step === 2) {
+    // Step 2: Selecionar usuário da lista
+    const result = conversationService.processSearchUser_Step2(from, body);
+
+    if (result.error) {
+      const message = result.message;
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    // Usuário selecionado - mostrar informações
+    const selectedUser = result.user;
+    const categories = selectedUser.categories ? selectedUser.categories.split(',').join(', ') : 'Não definida';
+    const hours = selectedUser.expected_weekly_hours || 40;
+
+    const message = `✅ *Usuário Encontrado*\n\n` +
+      `👤 *Nome:* ${selectedUser.name}\n` +
+      `📱 *Telefone:* ${selectedUser.phone}\n` +
+      `👔 *Cargo:* ${selectedUser.role === 'manager' ? 'Gerente' : selectedUser.role === 'supervisor' ? 'Supervisor' : 'Funcionário'}\n` +
+      `🏪 *Categorias:* ${categories}\n` +
+      `⏰ *Horas Semanais:* ${hours}h\n` +
+      `${selectedUser.active ? '🟢 Ativo' : '🔴 Inativo'}`;
+
+    return res.type('text/xml').send(twimlMessage(message + '\n\n' + menu));
+  }
+
+  // Step desconhecido
+  conversationService.cancelConversation(from);
+  return res.type('text/xml').send(twimlMessage(menu));
+}
+
+/**
+ * Handle set hours conversation
+ */
+async function handleSetHoursConversation(req, res, from, body, user, state) {
+  const menu = getMenuForRole(user.role, user.name);
+
+  if (state.step === 1) {
+    // Step 1: Receber nome para busca
+    const result = conversationService.processSetHours_Step1(from, body);
+
+    if (result.error === 'SEARCH_TOO_SHORT') {
+      const message = result.message;
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    if (result.error === 'NO_RESULTS') {
+      const message = result.message + '\n\nTente novamente ou envie *CANCELAR*.';
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    // Mostrar resultados
+    const message = MessageTemplates.conversation.searchUser_results(result.results, result.searchTerm);
+    return res.type('text/xml').send(twimlMessage(message));
+  }
+
+  if (state.step === 2) {
+    // Step 2: Selecionar usuário da lista
+    const result = conversationService.processSetHours_Step2(from, body);
+
+    if (result.error) {
+      const message = result.message;
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    // Usuário selecionado - pedir horas
+    const message = MessageTemplates.conversation.setHours_askHours(result.user.name);
+    return res.type('text/xml').send(twimlMessage(message));
+  }
+
+  if (state.step === 3) {
+    // Step 3: Processar horas
+    const result = conversationService.processSetHours_Step3(from, body);
+
+    if (result.error === 'INVALID_HOURS') {
+      const message = result.message;
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    // Atualizar no banco de dados
+    const { UserDB } = require('../services/database.service');
+    UserDB.updateExpectedHours(result.userId, result.hours);
+
+    const message = `✅ *Horas Definidas com Sucesso!*\n\n` +
+      `👤 *Usuário:* ${result.userName}\n` +
+      `⏰ *Horas Semanais:* ${result.hours}h`;
+
+    return res.type('text/xml').send(twimlMessage(message + '\n\n' + menu));
+  }
+
+  // Step desconhecido
+  conversationService.cancelConversation(from);
+  return res.type('text/xml').send(twimlMessage(menu));
+}
+
+/**
+ * Handle edit category conversation
+ */
+async function handleEditCategoryConversation(req, res, from, body, user, state) {
+  const menu = getMenuForRole(user.role, user.name);
+
+  if (state.step === 1) {
+    // Step 1: Receber nome para busca
+    const result = conversationService.processEditCategory_Step1(from, body);
+
+    if (result.error === 'SEARCH_TOO_SHORT') {
+      const message = result.message;
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    if (result.error === 'NO_RESULTS') {
+      const message = result.message + '\n\nTente novamente ou envie *CANCELAR*.';
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    // Mostrar resultados
+    const message = MessageTemplates.conversation.searchUser_results(result.results, result.searchTerm);
+    return res.type('text/xml').send(twimlMessage(message));
+  }
+
+  if (state.step === 2) {
+    // Step 2: Selecionar usuário da lista
+    const result = conversationService.processEditCategory_Step2(from, body);
+
+    if (result.error) {
+      const message = result.message;
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    // Usuário selecionado - pedir categorias
+    const message = MessageTemplates.conversation.editCategory_askCategories(result.user.name);
+    return res.type('text/xml').send(twimlMessage(message));
+  }
+
+  if (state.step === 3) {
+    // Step 3: Processar categorias
+    const result = conversationService.processEditCategory_Step3(from, body);
+
+    if (result.error === 'INVALID_CATEGORY') {
+      const message = result.message;
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    // Atualizar no banco de dados
+    const { UserDB } = require('../services/database.service');
+    UserDB.updateCategories(result.userId, result.categories);
+
+    const categoriesText = result.categories.join(', ');
+    const message = `✅ *Categorias Atualizadas!*\n\n` +
+      `👤 *Usuário:* ${result.userName}\n` +
+      `🏪 *Novas Categorias:* ${categoriesText}`;
+
+    return res.type('text/xml').send(twimlMessage(message + '\n\n' + menu));
+  }
+
+  // Step desconhecido
+  conversationService.cancelConversation(from);
+  return res.type('text/xml').send(twimlMessage(menu));
+}
+
+/**
+ * Handle registration steps process
+ */
+async function handleRegistrationSteps(req, res, from, body) {
+  const state = registrationService.getRegistrationState(from);
+
+  if (!state) {
+    // Estado não encontrado, iniciar novo registro
+    registrationService.startRegistration(from);
+    const message = MessageTemplates.registration.step1_welcome();
+    return res.type('text/xml').send(twimlMessage(message));
+  }
+
+  // Permitir cancelamento em qualquer step
+  if (body.toUpperCase() === 'CANCELAR') {
+    registrationService.cancelRegistration(from);
+    const message = MessageTemplates.registration.cancelled();
+    return res.type('text/xml').send(twimlMessage(message));
+  }
+
+  // Processar de acordo com o step atual
+  if (state.step === 1) {
+    // Step 1: Receber nome
+    const result = registrationService.processStep1(from, body);
+
+    if (result.error) {
+      const message = result.message || MessageTemplates.registration.invalidName();
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    // Nome aceito, ir para step 2
+    const message = MessageTemplates.registration.step2_chooseRole(result.name);
+    return res.type('text/xml').send(twimlMessage(message));
+  }
+
+  if (state.step === 2) {
+    // Step 2: Escolher cargo
+    const result = registrationService.processStep2(from, body);
+
+    if (result.error) {
+      const message = result.message || MessageTemplates.registration.invalidRole();
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    // Cargo aceito, ir para step 3 (categorias)
+    const message = MessageTemplates.registration.step3_chooseCategories(state.name, result.role);
+    return res.type('text/xml').send(twimlMessage(message));
+  }
+
+  if (state.step === 3) {
+    // Step 3: Escolher categorias
+    const result = registrationService.processStep3(from, body);
+
+    if (result.error) {
+      const message = result.message || MessageTemplates.registration.invalidCategory();
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    // Se não precisa de senha (staff), completar registro
+    if (!result.needsPassword) {
+      // Criar usuário no banco
+      const user = UserDB.create(state.name, from, state.role, null, state.categories);
+
+      // Fazer login automaticamente
+      authService.loginUser(user, from);
+
+      // Limpar estado de registro
+      registrationService.completeRegistration(from);
+
+      // Enviar mensagem de boas-vindas
+      const welcomeMsg = MessageTemplates.welcome(state.name, state.role, state.categories);
+      const menu = getMenuForRole(state.role, state.name);
+      return res.type('text/xml').send(twimlMessage(welcomeMsg + '\n\n' + menu));
+    }
+
+    // Precisa de senha (admin), ir para step 4
+    const message = MessageTemplates.registration.step4_askPassword(state.name, state.role);
+    return res.type('text/xml').send(twimlMessage(message));
+  }
+
+  if (state.step === 4) {
+    // Step 4: Validar senha (apenas admin)
+    const result = registrationService.processStep4(from, body, config.adminPassword);
+
+    if (result.error) {
+      const message = result.message || MessageTemplates.registration.wrongPassword();
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    // Senha correta, criar usuário
+    const user = UserDB.create(state.name, from, state.role, config.adminPassword, state.categories);
+
+    // Fazer login automaticamente
+    authService.loginUser(user, from);
+
+    // Limpar estado de registro
+    registrationService.completeRegistration(from);
+
+    // Enviar mensagem de boas-vindas
+    const welcomeMsg = MessageTemplates.welcome(state.name, state.role, state.categories);
+    const menu = getMenuForRole(state.role, state.name);
+    return res.type('text/xml').send(twimlMessage(welcomeMsg + '\n\n' + menu));
+  }
+
+  // Step desconhecido, reiniciar processo
+  registrationService.cancelRegistration(from);
+  registrationService.startRegistration(from);
+  const message = MessageTemplates.registration.step1_welcome();
+  return res.type('text/xml').send(twimlMessage(message));
+}
+
+/**
  * Main webhook handler
  */
 async function webhookHandler(req, res) {
@@ -277,7 +615,20 @@ async function webhookHandler(req, res) {
 
   const { action, cmd, tokens } = parseCommand(body, 'staff');
 
-  // Handle REGISTER command
+  // Check if user is in registration process
+  if (registrationService.isInRegistrationProcess(from)) {
+    return handleRegistrationSteps(req, res, from, body);
+  }
+
+  // Handle CANCELAR at any time
+  if (cmd === 'CANCELAR') {
+    registrationService.cancelRegistration(from);
+    conversationService.cancelConversation(from);
+    const message = MessageTemplates.registration.cancelled();
+    return res.type('text/xml').send(twimlMessage(message));
+  }
+
+  // Handle REGISTER command (old style - kept for compatibility)
   if (cmd === 'REGISTER') {
     return handleRegister(req, res, from, tokens);
   }
@@ -285,13 +636,28 @@ async function webhookHandler(req, res) {
   // Check if user exists
   let user = UserDB.findByPhone(from);
   if (!user) {
-    const message = MessageTemplates.registrationHelp();
+    // Start new friendly registration process
+    const startResult = registrationService.startRegistration(from);
+
+    if (startResult.error === 'USER_EXISTS') {
+      // Usuário já existe, enviar mensagem amigável
+      const existingUser = startResult.user;
+      const message = MessageTemplates.registration.userAlreadyExists(existingUser.name, existingUser.role);
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    const message = MessageTemplates.registration.step1_welcome();
     return res.type('text/xml').send(twimlMessage(message));
   }
 
   // Handle LOGIN command
   if (cmd === 'LOGIN') {
     return handleLogin(req, res, user, from, tokens);
+  }
+
+  // Check if user is in conversation process
+  if (conversationService.isInConversation(from)) {
+    return handleConversationSteps(req, res, from, body, user);
   }
 
   // Auto-login staff users
@@ -311,6 +677,27 @@ async function webhookHandler(req, res) {
 
   if (userAction === 'ALL_SCHEDULES' || userAction === 'STATUS') {
     return handleAllSchedules(req, res, user);
+  }
+
+  if (userAction === 'SEARCH_USER') {
+    // Start search user conversation
+    conversationService.startSearchUser(from);
+    const message = MessageTemplates.conversation.searchUser_start();
+    return res.type('text/xml').send(twimlMessage(message));
+  }
+
+  if (userAction === 'SET_HOURS') {
+    // Start set hours conversation
+    conversationService.startSetHours(from);
+    const message = MessageTemplates.conversation.setHours_start();
+    return res.type('text/xml').send(twimlMessage(message));
+  }
+
+  if (userAction === 'EDIT_CATEGORY') {
+    // Start edit category conversation
+    conversationService.startEditCategory(from);
+    const message = MessageTemplates.conversation.editCategory_start();
+    return res.type('text/xml').send(twimlMessage(message));
   }
 
   if (userAction === 'SEARCH') {

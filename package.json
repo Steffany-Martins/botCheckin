@@ -4,7 +4,8 @@
   "description": "Webhook for Twilio WhatsApp -> Node.js with SQLite (roles: staff, manager, supervisor)",
   "main": "src/server.js",
   "engines": {
-    "node": "18.x || 20.x"
+    "node": "18.x || 20.x",
+    "npm": "9.x || 10.x"
   },
   "scripts": {
     "start": "node src/server.js",

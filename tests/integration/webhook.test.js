@@ -42,10 +42,13 @@ jest.mock('../../src/services/whatsapp.service', () => {
 
 const { UserDB, CheckinDB, SessionDB } = require('../../src/services/database.service');
 const { sendWhatsAppMessage } = require('../../src/services/whatsapp.service');
+const registrationService = require('../../src/services/registration.service');
 
 describe('Webhook Integration Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Limpar estados de registro entre testes
+    registrationService.clearAllStates();
   });
 
   describe('POST /webhook', () => {
@@ -287,7 +290,7 @@ describe('Webhook Integration Tests', () => {
         expect(response.text).toContain('Erro');
       });
 
-      it('should return registration help for unregistered user', async () => {
+      it('should start friendly registration for unregistered user', async () => {
         UserDB.findByPhone.mockReturnValue(null);
 
         const response = await request(app)
@@ -298,7 +301,9 @@ describe('Webhook Integration Tests', () => {
           })
           .expect(200);
 
-        expect(response.text).toContain('REGISTER');
+        expect(response.text).toContain('Bem-vindo ao BotCheckin');
+        expect(response.text).toContain('PASSO 1 de 4');
+        expect(response.text).toContain('nome completo');
       });
 
       it('should return menu for unknown command', async () => {
@@ -314,7 +319,7 @@ describe('Webhook Integration Tests', () => {
           })
           .expect(200);
 
-        expect(response.text).toContain('MENU');
+        expect(response.text).toContain('Comando');
       });
     });
   });
