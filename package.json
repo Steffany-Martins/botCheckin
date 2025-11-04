@@ -2,16 +2,26 @@
   "name": "botcheckin",
   "version": "0.1.0",
   "description": "Webhook for Twilio WhatsApp -> Node.js with SQLite (roles: staff, manager, supervisor)",
-  "main": "index.js",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration"
   },
-  "keywords": [],
+  "keywords": [
+    "whatsapp",
+    "twilio",
+    "checkin",
+    "attendance",
+    "webhook"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
