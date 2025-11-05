@@ -22,7 +22,7 @@ async function recordCheckin(user, type, location = null, latitude = null, longi
   }
 
   // Create checkin record with GPS data
-  const checkinId = CheckinDB.createWithGPS(
+  const checkinId = await CheckinDB.createWithGPS(
     user.id,
     type,
     location,
@@ -34,7 +34,7 @@ async function recordCheckin(user, type, location = null, latitude = null, longi
 
   // Notify supervisor if exists
   if (user.supervisor_id) {
-    const supervisor = UserDB.findById(user.supervisor_id);
+    const supervisor = await UserDB.findById(user.supervisor_id);
     if (supervisor) {
       const timestamp = new Date().toLocaleString('pt-BR', {
         timeZone: 'America/Sao_Paulo'

@@ -347,26 +347,18 @@ const CheckinDB = {
    * Create a new checkin with GPS data
    */
   async createWithGPS(userId, type, location = null, latitude = null, longitude = null, locationVerified = 1, distanceMeters = null) {
-    const { data, error } = await supabase
-      .from('checkins')
-      .insert({
-        user_id: userId,
-        type,
-        location,
-        latitude,
-        longitude,
-        location_verified: locationVerified,
-        distance_meters: distanceMeters
-      })
-      .select()
-      .single();
-
-    if (error) {
+    try {
+      const result = await pool.query(
+        `INSERT INTO checkins (user_id, type, location, latitude, longitude, location_verified, distance_meters)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id`,
+        [userId, type, location, latitude, longitude, locationVerified, distanceMeters]
+      );
+      return result.rows[0].id;
+    } catch (error) {
       console.error('Error creating checkin with GPS:', error);
       return null;
     }
-
-    return data ? data.id : null;
   },
 
   /**
