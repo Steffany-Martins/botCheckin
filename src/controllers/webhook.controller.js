@@ -631,7 +631,7 @@ async function handleRegistrationSteps(req, res, from, body) {
 
   if (!state) {
     // Estado não encontrado, iniciar novo registro
-    registrationService.startRegistration(from);
+    await registrationService.startRegistration(from);
     const message = MessageTemplates.registration.step1_welcome();
     return res.type('text/xml').send(twimlMessage(message));
   }
@@ -764,7 +764,7 @@ async function handleRegistrationSteps(req, res, from, body) {
 
   // Step desconhecido, reiniciar processo
   registrationService.cancelRegistration(from);
-  registrationService.startRegistration(from);
+  await registrationService.startRegistration(from);
   const message = MessageTemplates.registration.step1_welcome();
   return res.type('text/xml').send(twimlMessage(message));
 }
@@ -817,7 +817,7 @@ async function webhookHandler(req, res) {
   let user = await UserDB.findByPhone(from);
   if (!user) {
     // Start new friendly registration process
-    const startResult = registrationService.startRegistration(from);
+    const startResult = await registrationService.startRegistration(from);
 
     if (startResult.error === 'USER_EXISTS') {
       // Usuário já existe, enviar mensagem amigável
