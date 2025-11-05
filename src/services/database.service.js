@@ -91,63 +91,53 @@ const UserDB = {
    * Find user by phone number
    */
   async findByPhone(phone) {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('phone', phone)
-      .single();
-
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+    try {
+      const result = await pool.query(
+        'SELECT * FROM users WHERE phone = $1',
+        [phone]
+      );
+      return result.rows[0] || null;
+    } catch (error) {
       console.error('Error finding user by phone:', error);
       return null;
     }
-
-    return data;
   },
 
   /**
    * Find user by ID
    */
   async findById(id) {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error && error.code !== 'PGRST116') {
+    try {
+      const result = await pool.query(
+        'SELECT * FROM users WHERE id = $1',
+        [id]
+      );
+      return result.rows[0] || null;
+    } catch (error) {
       console.error('Error finding user by ID:', error);
       return null;
     }
-
-    return data;
   },
 
   /**
    * Create a new user
    */
   async create(name, phone, role, password = null, categories = null, expectedWeeklyHours = 40.0) {
-    const categoriesStr = Array.isArray(categories) ? categories.join(',') : categories;
+    try {
+      const categoriesStr = Array.isArray(categories) ? categories.join(',') : categories;
 
-    const { data, error } = await supabase
-      .from('users')
-      .insert({
-        name,
-        phone,
-        role,
-        password,
-        categories: categoriesStr,
-        expected_weekly_hours: expectedWeeklyHours
-      })
-      .select()
-      .single();
+      const result = await pool.query(
+        `INSERT INTO users (name, phone, role, password, categories, expected_weekly_hours)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *`,
+        [name, phone, role, password, categoriesStr, expectedWeeklyHours]
+      );
 
-    if (error) {
+      return result.rows[0];
+    } catch (error) {
       console.error('Error creating user:', error);
       return null;
     }
-
-    return data;
   },
 
   /**

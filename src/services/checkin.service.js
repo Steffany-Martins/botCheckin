@@ -62,44 +62,44 @@ async function recordCheckin(user, type, location = null, latitude = null, longi
 /**
  * Get user's checkin history
  */
-function getUserHistory(userId, limit = 10) {
-  return CheckinDB.getUserHistory(userId, limit);
+async function getUserHistory(userId, limit = 10) {
+  return await CheckinDB.getUserHistory(userId, limit);
 }
 
 /**
  * Get all users with their schedules
  */
-function getAllSchedules() {
-  return UserDB.getAllWithCheckins();
+async function getAllSchedules() {
+  return await UserDB.getAllWithCheckins();
 }
 
 /**
  * Search users by query
  */
-function searchUsers(query, limit = 15) {
-  return UserDB.search(query, limit);
+async function searchUsers(query, limit = 15) {
+  return await UserDB.search(query, limit);
 }
 
 /**
  * Get team members status for supervisor
  */
-function getTeamStatus(supervisorId) {
-  return UserDB.getTeamMembers(supervisorId);
+async function getTeamStatus(supervisorId) {
+  return await UserDB.getTeamMembers(supervisorId);
 }
 
 /**
  * Get team history for supervisor
  */
-function getTeamHistory(supervisorId, limit = 20) {
-  return UserDB.getTeamHistory(supervisorId, limit);
+async function getTeamHistory(supervisorId, limit = 20) {
+  return await UserDB.getTeamHistory(supervisorId, limit);
 }
 
 /**
  * Update checkin timestamp (manager only)
  */
-function updateCheckinTime(checkinId, newTimestamp) {
+async function updateCheckinTime(checkinId, newTimestamp) {
   try {
-    const result = CheckinDB.updateTimestamp(checkinId, newTimestamp);
+    const result = await CheckinDB.updateTimestamp(checkinId, newTimestamp);
     return {
       success: result.changes > 0,
       changes: result.changes
@@ -115,8 +115,8 @@ function updateCheckinTime(checkinId, newTimestamp) {
 /**
  * Delete checkin (manager only)
  */
-function deleteCheckin(checkinId) {
-  const result = CheckinDB.delete(checkinId);
+async function deleteCheckin(checkinId) {
+  const result = await CheckinDB.delete(checkinId);
   return {
     success: result.changes > 0,
     changes: result.changes
@@ -126,9 +126,9 @@ function deleteCheckin(checkinId) {
 /**
  * Add manual checkin (manager only)
  */
-function addManualCheckin(userId, type, timestamp, location = null) {
+async function addManualCheckin(userId, type, timestamp, location = null) {
   try {
-    CheckinDB.createManual(userId, type.toLowerCase(), timestamp, location);
+    await CheckinDB.createManual(userId, type.toLowerCase(), timestamp, location);
     return { success: true };
   } catch (err) {
     return {

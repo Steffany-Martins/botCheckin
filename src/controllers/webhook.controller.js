@@ -147,7 +147,7 @@ async function handleCheckinAction(req, res, user, action, tokens) {
  * Handle stat/history request
  */
 async function handleStat(req, res, user) {
-  const records = checkinService.getUserHistory(user.id);
+  const records = await checkinService.getUserHistory(user.id);
   const historyMsg = MessageTemplates.userHistory(records);
   const menu = getMenuForRole(user.role, user.name);
   res.type('text/xml').send(twimlMessage(historyMsg + '\n\n' + menu));
@@ -157,7 +157,7 @@ async function handleStat(req, res, user) {
  * Handle all schedules request (manager)
  */
 async function handleAllSchedules(req, res, user) {
-  const groups = checkinService.getAllSchedules();
+  const groups = await checkinService.getAllSchedules();
   const scheduleMsg = MessageTemplates.allSchedules(groups);
   const menu = getMenuForRole(user.role, user.name);
   res.type('text/xml').send(twimlMessage(scheduleMsg + '\n\n' + menu));
@@ -175,7 +175,7 @@ async function handleSearch(req, res, user, tokens) {
     return res.type('text/xml').send(twimlMessage(errorMsg + '\n\n' + menu));
   }
 
-  const users = checkinService.searchUsers(query);
+  const users = await checkinService.searchUsers(query);
   const searchMsg = MessageTemplates.searchResults(users);
   const menu = getMenuForRole(user.role, user.name);
   res.type('text/xml').send(twimlMessage(searchMsg + '\n\n' + menu));
@@ -185,7 +185,7 @@ async function handleSearch(req, res, user, tokens) {
  * Handle team active status (supervisor)
  */
 async function handleTeamActive(req, res, user) {
-  const members = checkinService.getTeamStatus(user.id);
+  const members = await checkinService.getTeamStatus(user.id);
   const teamMsg = MessageTemplates.teamActive(members);
   const menu = getMenuForRole(user.role, user.name);
   res.type('text/xml').send(twimlMessage(teamMsg + '\n\n' + menu));
@@ -195,7 +195,7 @@ async function handleTeamActive(req, res, user) {
  * Handle team history (supervisor)
  */
 async function handleTeamHistory(req, res, user) {
-  const records = checkinService.getTeamHistory(user.id);
+  const records = await checkinService.getTeamHistory(user.id);
   const historyMsg = MessageTemplates.teamHistory(records);
   const menu = getMenuForRole(user.role, user.name);
   res.type('text/xml').send(twimlMessage(historyMsg + '\n\n' + menu));
@@ -214,7 +214,7 @@ async function handleEditTime(req, res, user, tokens) {
     return res.type('text/xml').send(twimlMessage(errorMsg + '\n\n' + menu));
   }
 
-  const result = checkinService.updateCheckinTime(checkinId, newTime);
+  const result = await checkinService.updateCheckinTime(checkinId, newTime);
   const menu = getMenuForRole(user.role, user.name);
 
   if (result.error === 'INVALID_FORMAT') {
@@ -241,7 +241,7 @@ async function handleDelete(req, res, user, tokens) {
     return res.type('text/xml').send(twimlMessage(errorMsg + '\n\n' + menu));
   }
 
-  const result = checkinService.deleteCheckin(checkinId);
+  const result = await checkinService.deleteCheckin(checkinId);
   const menu = getMenuForRole(user.role, user.name);
 
   const message = result.success
@@ -266,7 +266,7 @@ async function handleAdd(req, res, user, tokens) {
     return res.type('text/xml').send(twimlMessage(errorMsg + '\n\n' + menu));
   }
 
-  const result = checkinService.addManualCheckin(userId, type, timestamp, location);
+  const result = await checkinService.addManualCheckin(userId, type, timestamp, location);
   const menu = getMenuForRole(user.role, user.name);
 
   const message = result.success
@@ -280,7 +280,7 @@ async function handleAdd(req, res, user, tokens) {
  * Handle logout
  */
 async function handleLogout(req, res, from) {
-  authService.logoutUser(from);
+  await authService.logoutUser(from);
   const message = MessageTemplates.logout();
   res.type('text/xml').send(twimlMessage(message));
 }
@@ -708,10 +708,15 @@ async function handleRegistrationSteps(req, res, from, body) {
     // Se não precisa de senha (staff), completar registro
     if (!result.needsPassword) {
       // Criar usuário no banco
-      const user = UserDB.create(state.name, from, state.role, null, result.categories);
+      const user = await UserDB.create(state.name, from, state.role, null, result.categories);
+
+      if (!user) {
+        const message = '❌ Erro ao criar usuário. Tente novamente.';
+        return res.type('text/xml').send(twimlMessage(message));
+      }
 
       // Fazer login automaticamente
-      authService.loginUser(user, from);
+      await authService.loginUser(user, from);
 
       // Limpar estado de registro
       registrationService.completeRegistration(from);
@@ -737,10 +742,15 @@ async function handleRegistrationSteps(req, res, from, body) {
     }
 
     // Senha correta, criar usuário
-    const user = UserDB.create(state.name, from, state.role, config.adminPassword, state.categories);
+    const user = await UserDB.create(state.name, from, state.role, config.adminPassword, state.categories);
+
+    if (!user) {
+      const message = '❌ Erro ao criar usuário. Tente novamente.';
+      return res.type('text/xml').send(twimlMessage(message));
+    }
 
     // Fazer login automaticamente
-    authService.loginUser(user, from);
+    await authService.loginUser(user, from);
 
     // Limpar estado de registro
     registrationService.completeRegistration(from);
@@ -782,7 +792,7 @@ async function webhookHandler(req, res) {
     registrationService.cancelRegistration(from);
     conversationService.cancelConversation(from);
 
-    const user = UserDB.findByPhone(from);
+    const user = await UserDB.findByPhone(from);
     if (user) {
       const menu = getMenuForRole(user.role, user.name);
       return res.type('text/xml').send(twimlMessage(`📋 *Menu Principal*\n\n${menu}`));
@@ -803,8 +813,8 @@ async function webhookHandler(req, res) {
     return handleRegister(req, res, from, tokens);
   }
 
-  // Check if user exists
-  let user = UserDB.findByPhone(from);
+  // Check if user exists in Supabase
+  let user = await UserDB.findByPhone(from);
   if (!user) {
     // Start new friendly registration process
     const startResult = registrationService.startRegistration(from);
@@ -831,7 +841,7 @@ async function webhookHandler(req, res) {
   }
 
   // Auto-login staff users
-  authService.autoLoginStaff(user, from);
+  await authService.autoLoginStaff(user, from);
 
   // Re-parse command with actual user role
   const { action: userAction, tokens: userTokens } = parseCommand(body, user.role);
