@@ -55,6 +55,12 @@ function initDatabase() {
 
   // Migração: adicionar colunas se não existirem (para bancos existentes)
   try {
+    db.exec(`ALTER TABLE users ADD COLUMN password TEXT`);
+  } catch (e) {
+    // Coluna já existe
+  }
+
+  try {
     db.exec(`ALTER TABLE users ADD COLUMN categories TEXT`);
   } catch (e) {
     // Coluna já existe
@@ -207,6 +213,13 @@ const UserDB = {
       ORDER BY c.timestamp DESC
       LIMIT ?
     `).all(supervisorId, limit);
+  },
+
+  /**
+   * Get all users
+   */
+  all() {
+    return db.prepare('SELECT * FROM users ORDER BY name ASC').all();
   }
 };
 
@@ -258,6 +271,18 @@ const CheckinDB = {
   createManual(userId, type, timestamp, location = null) {
     const stmt = db.prepare('INSERT INTO checkins (user_id, type, timestamp, location) VALUES (?, ?, ?, ?)');
     return stmt.run(userId, type, timestamp, location);
+  },
+
+  /**
+   * Get recent checkins across all users
+   */
+  getRecent(limit = 20) {
+    return db.prepare(`
+      SELECT id, user_id, type, timestamp, location, latitude, longitude, location_verified, distance_meters
+      FROM checkins
+      ORDER BY timestamp DESC
+      LIMIT ?
+    `).all(limit);
   }
 };
 

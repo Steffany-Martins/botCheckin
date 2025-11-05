@@ -550,7 +550,7 @@ async function handleRegistrationSteps(req, res, from, body) {
     // Se não precisa de senha (staff), completar registro
     if (!result.needsPassword) {
       // Criar usuário no banco
-      const user = UserDB.create(state.name, from, state.role, null, state.categories);
+      const user = UserDB.create(state.name, from, state.role, null, result.categories);
 
       // Fazer login automaticamente
       authService.loginUser(user, from);
@@ -559,7 +559,7 @@ async function handleRegistrationSteps(req, res, from, body) {
       registrationService.completeRegistration(from);
 
       // Enviar mensagem de boas-vindas
-      const welcomeMsg = MessageTemplates.welcome(state.name, state.role, state.categories);
+      const welcomeMsg = MessageTemplates.welcome(state.name, state.role, result.categories);
       const menu = getMenuForRole(state.role, state.name);
       return res.type('text/xml').send(twimlMessage(welcomeMsg + '\n\n' + menu));
     }
@@ -588,7 +588,8 @@ async function handleRegistrationSteps(req, res, from, body) {
     registrationService.completeRegistration(from);
 
     // Enviar mensagem de boas-vindas
-    const welcomeMsg = MessageTemplates.welcome(state.name, state.role, state.categories);
+    const categoriesArray = Array.isArray(state.categories) ? state.categories : (state.categories ? state.categories.split(',') : []);
+    const welcomeMsg = MessageTemplates.welcome(state.name, state.role, categoriesArray);
     const menu = getMenuForRole(state.role, state.name);
     return res.type('text/xml').send(twimlMessage(welcomeMsg + '\n\n' + menu));
   }
@@ -614,6 +615,25 @@ async function webhookHandler(req, res) {
   }
 
   const { action, cmd, tokens } = parseCommand(body, 'staff');
+
+  // Handle global navigation commands (work from anywhere)
+  const upperBody = body.toUpperCase();
+
+  // MENU command - return to main menu from anywhere
+  if (upperBody === 'MENU') {
+    registrationService.cancelRegistration(from);
+    conversationService.cancelConversation(from);
+
+    const user = UserDB.findByPhone(from);
+    if (user) {
+      const menu = getMenuForRole(user.role, user.name);
+      return res.type('text/xml').send(twimlMessage(`📋 *Menu Principal*\n\n${menu}`));
+    } else {
+      // User not registered yet
+      const message = '👋 Olá! Para acessar o menu, você precisa se cadastrar primeiro.\n\nEnvie qualquer mensagem para começar o cadastro.';
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+  }
 
   // Check if user is in registration process
   if (registrationService.isInRegistrationProcess(from)) {

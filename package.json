@@ -13,7 +13,9 @@
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "test:unit": "jest tests/unit",
-    "test:integration": "jest tests/integration"
+    "test:integration": "jest tests/integration",
+    "db:seed": "node scripts/seed-database.js",
+    "db:view": "node scripts/view-database.js"
   },
   "keywords": [
     "whatsapp",
