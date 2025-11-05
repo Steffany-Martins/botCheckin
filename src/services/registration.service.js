@@ -35,18 +35,20 @@ function isInRegistrationProcess(phone) {
 /**
  * Verifica se usuário já está cadastrado
  */
-function checkUserExists(phone) {
-  const user = UserDB.findByPhone(phone);
+async function checkUserExists(phone) {
+  const user = await UserDB.findByPhone(phone);
   return user !== undefined && user !== null;
 }
 
 /**
  * Inicia processo de registro
  */
-function startRegistration(phone) {
+async function startRegistration(phone) {
   // Verificar se usuário já existe
-  if (checkUserExists(phone)) {
-    return { error: 'USER_EXISTS', user: UserDB.findByPhone(phone) };
+  const userExists = await checkUserExists(phone);
+  if (userExists) {
+    const user = await UserDB.findByPhone(phone);
+    return { error: 'USER_EXISTS', user };
   }
 
   registrationStates.set(phone, {
