@@ -35,7 +35,7 @@ const fakeEmployees = [
     phone: '+5521900000003',
     role: 'staff',
     password: null,
-    categories: ['padaria', 'cafe'],
+    categories: ['padaria'],
     expectedWeeklyHours: 30
   },
   {
@@ -51,7 +51,7 @@ const fakeEmployees = [
     phone: '+5521900000005',
     role: 'staff',
     password: null,
-    categories: ['lanchonete'],
+    categories: ['bar'],
     expectedWeeklyHours: 35
   },
   {
@@ -75,7 +75,7 @@ const fakeEmployees = [
     phone: '+5521900000008',
     role: 'staff',
     password: null,
-    categories: ['cafe', 'lanchonete'],
+    categories: ['bar'],
     expectedWeeklyHours: 32
   },
   {
@@ -91,7 +91,7 @@ const fakeEmployees = [
     phone: '+5521900000010',
     role: 'supervisor',
     password: process.env.ADMIN_PASSWORD || 'admin123',
-    categories: ['padaria', 'cafe'],
+    categories: ['padaria'],
     expectedWeeklyHours: 44
   }
 ];

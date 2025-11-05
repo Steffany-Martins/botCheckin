@@ -188,9 +188,7 @@ function processEditCategory_Step3(phone, input) {
     '1': 'bar',
     '2': 'restaurante',
     '3': 'padaria',
-    '4': 'cafe',
-    '5': 'lanchonete',
-    '6': 'outro'
+    '4': 'outro'
   };
 
   const selections = input_clean.split(/[,\s]+/).filter(s => s.length > 0);

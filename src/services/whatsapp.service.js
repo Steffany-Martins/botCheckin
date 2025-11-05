@@ -127,7 +127,7 @@ const MessageTemplates = {
    * Welcome message after registration
    */
   welcome(name, role, categories = []) {
-    const emoji = role === 'manager' ? '👔' : role === 'supervisor' ? '👨‍💼' : '👤';
+    const emoji = role === 'manager' ? '💫' : role === 'supervisor' ? '🔎' : '👤';
     const roleText = role === 'manager' ? 'Gerente' : role === 'supervisor' ? 'Supervisor' : 'Funcionário';
 
     let categoryText = '';
@@ -136,8 +136,6 @@ const MessageTemplates = {
         'bar': '🍺',
         'restaurante': '🍽️',
         'padaria': '🥖',
-        'cafe': '☕',
-        'lanchonete': '🍔',
         'outro': '📋'
       };
       const catList = categories.map(c => `${catEmojis[c] || '📋'} ${c.charAt(0).toUpperCase() + c.slice(1)}`).join(', ');
@@ -554,8 +552,6 @@ const MessageTemplates = {
         'bar': '🍺',
         'restaurante': '🍽️',
         'padaria': '🥖',
-        'cafe': '☕',
-        'lanchonete': '🍔',
         'outro': '📋'
       };
       const catList = categories.map(c => `${catEmojis[c] || '📋'} ${c.charAt(0).toUpperCase() + c.slice(1)}`).join(', ');

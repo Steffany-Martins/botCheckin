@@ -146,8 +146,6 @@ function displayStatistics() {
           bar: '🍺',
           restaurante: '🍽️',
           padaria: '🥖',
-          cafe: '☕',
-          lanchonete: '🍔',
           outro: '📋'
         }[cat] || '📋';
         console.log(`   ${emoji} ${cat}: ${count}`);

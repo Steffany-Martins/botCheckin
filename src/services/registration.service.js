@@ -201,9 +201,8 @@ function processStep3(phone, input) {
     '1': 'bar',
     '2': 'restaurante',
     '3': 'padaria',
-    '4': 'cafe',
-    '5': 'lanchonete',
-    '6': 'outro'
+    '4': 'lanchonete',
+    '5': 'outro'
   };
 
   // Processar seleção múltipla (ex: "1,2,3" ou "1 2 3")

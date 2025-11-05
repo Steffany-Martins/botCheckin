@@ -15,7 +15,10 @@
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
     "db:seed": "node scripts/seed-database.js",
-    "db:view": "node scripts/view-database.js"
+    "db:view": "node scripts/view-database.js",
+    "db:migrate-supabase": "node scripts/migrate-to-supabase.js",
+    "db:switch-supabase": "node scripts/switch-to-supabase.js",
+    "db:switch-sqlite": "node scripts/switch-to-sqlite.js"
   },
   "keywords": [
     "whatsapp",
@@ -27,10 +30,12 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@supabase/supabase-js": "^2.79.0",
     "better-sqlite3": "^8.2.0",
     "body-parser": "^1.20.2",
     "dotenv": "^16.3.1",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "pg": "^8.16.3"
   },
   "devDependencies": {
     "jest": "^29.7.0",
