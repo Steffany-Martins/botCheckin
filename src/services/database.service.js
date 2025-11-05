@@ -72,6 +72,50 @@ function initDatabase() {
     // Coluna já existe
   }
 
+  // Adicionar colunas para audit trail de edições
+  try {
+    db.exec(`ALTER TABLE checkins ADD COLUMN edited_by INTEGER`);
+  } catch (e) {
+    // Coluna já existe
+  }
+
+  try {
+    db.exec(`ALTER TABLE checkins ADD COLUMN edited_at TEXT`);
+  } catch (e) {
+    // Coluna já existe
+  }
+
+  try {
+    db.exec(`ALTER TABLE checkins ADD COLUMN original_timestamp TEXT`);
+  } catch (e) {
+    // Coluna já existe
+  }
+
+  // Adicionar colunas para GPS location verification
+  try {
+    db.exec(`ALTER TABLE checkins ADD COLUMN latitude REAL`);
+  } catch (e) {
+    // Coluna já existe
+  }
+
+  try {
+    db.exec(`ALTER TABLE checkins ADD COLUMN longitude REAL`);
+  } catch (e) {
+    // Coluna já existe
+  }
+
+  try {
+    db.exec(`ALTER TABLE checkins ADD COLUMN location_verified INTEGER DEFAULT 1`);
+  } catch (e) {
+    // Coluna já existe
+  }
+
+  try {
+    db.exec(`ALTER TABLE checkins ADD COLUMN distance_meters INTEGER`);
+  } catch (e) {
+    // Coluna já existe
+  }
+
   // Seed minimal users if none exist
   const result = db.prepare('SELECT COUNT(*) as c FROM users').get();
   if (result.c === 0) {
@@ -237,6 +281,18 @@ const CheckinDB = {
   },
 
   /**
+   * Create a new checkin with GPS data
+   */
+  createWithGPS(userId, type, location = null, latitude = null, longitude = null, locationVerified = 1, distanceMeters = null) {
+    const stmt = db.prepare(`
+      INSERT INTO checkins (user_id, type, location, latitude, longitude, location_verified, distance_meters)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    const info = stmt.run(userId, type, location, latitude, longitude, locationVerified, distanceMeters);
+    return info.lastInsertRowid;
+  },
+
+  /**
    * Get user's recent checkins
    */
   getUserHistory(userId, limit = 10) {
@@ -283,6 +339,51 @@ const CheckinDB = {
       ORDER BY timestamp DESC
       LIMIT ?
     `).all(limit);
+  },
+
+  /**
+   * Get recent checkins for a specific user
+   */
+  getRecentByUser(userId, limit = 10) {
+    return db.prepare(`
+      SELECT id, user_id, type, timestamp, location, latitude, longitude, location_verified, distance_meters, edited_by, edited_at, original_timestamp
+      FROM checkins
+      WHERE user_id = ?
+      ORDER BY timestamp DESC
+      LIMIT ?
+    `).all(userId, limit);
+  },
+
+  /**
+   * Edit checkin timestamp with audit trail
+   */
+  editTimestamp(checkinId, newTimestamp, editorUserId) {
+    try {
+      // Get original timestamp if not already saved
+      const checkin = db.prepare('SELECT timestamp, original_timestamp FROM checkins WHERE id = ?').get(checkinId);
+
+      if (!checkin) {
+        return { success: false, error: 'CHECKIN_NOT_FOUND' };
+      }
+
+      const originalTimestamp = checkin.original_timestamp || checkin.timestamp;
+
+      const stmt = db.prepare(`
+        UPDATE checkins
+        SET timestamp = ?,
+            edited_by = ?,
+            edited_at = ?,
+            original_timestamp = ?
+        WHERE id = ?
+      `);
+
+      const now = new Date().toISOString();
+      stmt.run(newTimestamp, editorUserId, now, originalTimestamp, checkinId);
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   }
 };
 

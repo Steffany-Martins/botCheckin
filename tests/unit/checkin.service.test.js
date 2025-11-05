@@ -7,11 +7,20 @@ jest.mock('../../src/services/database.service', () => ({
   },
   CheckinDB: {
     create: jest.fn(),
+    createWithGPS: jest.fn(),
     getUserHistory: jest.fn(),
     updateTimestamp: jest.fn(),
     delete: jest.fn(),
     createManual: jest.fn()
   }
+}));
+
+jest.mock('../../src/utils/location', () => ({
+  verifyLocation: jest.fn(() => ({
+    verified: true,
+    distance: 50,
+    message: '✅ Dentro do raio (50m)'
+  }))
 }));
 
 jest.mock('../../src/services/whatsapp.service', () => ({
@@ -33,36 +42,50 @@ describe('Checkin Service', () => {
   describe('recordCheckin', () => {
     it('should record checkin without supervisor notification', async () => {
       const user = { id: 1, name: 'John', supervisor_id: null };
-      CheckinDB.create.mockReturnValue(123);
+      CheckinDB.createWithGPS.mockReturnValue(123);
 
       const result = await checkinService.recordCheckin(user, 'checkin', null);
 
-      expect(result).toBe(123);
-      expect(CheckinDB.create).toHaveBeenCalledWith(1, 'checkin', null);
+      expect(result.checkinId).toBe(123);
+      expect(result.locationVerified).toBe(true);
+      expect(result.distance).toBeNull();
+      expect(CheckinDB.createWithGPS).toHaveBeenCalledWith(1, 'checkin', null, null, null, 1, null);
       expect(UserDB.findById).not.toHaveBeenCalled();
       expect(sendWhatsAppMessage).not.toHaveBeenCalled();
     });
 
     it('should record checkin with location', async () => {
       const user = { id: 1, name: 'John', supervisor_id: null };
-      CheckinDB.create.mockReturnValue(124);
+      CheckinDB.createWithGPS.mockReturnValue(124);
 
       const result = await checkinService.recordCheckin(user, 'break', 'Office');
 
-      expect(result).toBe(124);
-      expect(CheckinDB.create).toHaveBeenCalledWith(1, 'break', 'Office');
+      expect(result.checkinId).toBe(124);
+      expect(CheckinDB.createWithGPS).toHaveBeenCalledWith(1, 'break', 'Office', null, null, 1, null);
+    });
+
+    it('should record checkin with GPS coordinates', async () => {
+      const user = { id: 1, name: 'John', supervisor_id: null };
+      CheckinDB.createWithGPS.mockReturnValue(125);
+
+      const result = await checkinService.recordCheckin(user, 'checkin', null, -22.919064, -43.183182);
+
+      expect(result.checkinId).toBe(125);
+      expect(result.locationVerified).toBe(true);
+      expect(result.distance).toBe(50);
+      expect(CheckinDB.createWithGPS).toHaveBeenCalledWith(1, 'checkin', null, -22.919064, -43.183182, 1, 50);
     });
 
     it('should notify supervisor when present', async () => {
       const user = { id: 1, name: 'John', supervisor_id: 2 };
       const supervisor = { id: 2, name: 'Jane', phone: '+15559999999' };
 
-      CheckinDB.create.mockReturnValue(125);
+      CheckinDB.createWithGPS.mockReturnValue(126);
       UserDB.findById.mockReturnValue(supervisor);
 
       const result = await checkinService.recordCheckin(user, 'checkin', 'Downtown');
 
-      expect(result).toBe(125);
+      expect(result.checkinId).toBe(126);
       expect(UserDB.findById).toHaveBeenCalledWith(2);
       expect(sendWhatsAppMessage).toHaveBeenCalledWith(
         '+15559999999',
@@ -73,12 +96,12 @@ describe('Checkin Service', () => {
     it('should not notify if supervisor not found', async () => {
       const user = { id: 1, name: 'John', supervisor_id: 2 };
 
-      CheckinDB.create.mockReturnValue(126);
+      CheckinDB.createWithGPS.mockReturnValue(127);
       UserDB.findById.mockReturnValue(null);
 
       const result = await checkinService.recordCheckin(user, 'checkout', null);
 
-      expect(result).toBe(126);
+      expect(result.checkinId).toBe(127);
       expect(UserDB.findById).toHaveBeenCalledWith(2);
       expect(sendWhatsAppMessage).not.toHaveBeenCalled();
     });

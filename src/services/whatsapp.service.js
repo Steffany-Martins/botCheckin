@@ -46,14 +46,14 @@ const MessageTemplates = {
      * Step 1: Boas-vindas e pedir nome
      */
     step1_welcome() {
-      return `👋 *Olá! Bem-vindo ao BotCheckin!*\n\nVejo que você ainda não está cadastrado.\nVamos fazer seu cadastro em *4 passos simples*! 😊\n\n📝 *PASSO 1 de 4*\nPor favor, me diga seu *nome completo*:\n\n💡 _Exemplo: João Silva_`;
+      return `👋 *Olá! Bem-vindo ao BotCheckin!*\n\nVejo que você ainda não está cadastrado.\nVamos fazer seu cadastro em *4 passos simples*! 😊\n\n📝 *PASSO 1 de 4*\nPor favor, me diga seu *nome completo*:\n\n💡 _Exemplo: João Silva_\n\n0️⃣ Cancelar cadastro`;
     },
 
     /**
      * Step 2: Escolher cargo
      */
     step2_chooseRole(name) {
-      return `✅ Prazer em conhecê-lo(a), *${name}*!\n\n📝 *PASSO 2 de 4*\nAgora, selecione seu tipo de acesso:\n\n1️⃣ *Funcionário* - Fazer check-in/out\n2️⃣ *Gerente* - Gerenciar horários da equipe\n3️⃣ *Supervisor* - Acompanhar equipe\n\nEnvie o *número* da sua opção (1, 2 ou 3):`;
+      return `✅ Prazer em conhecê-lo(a), *${name}*!\n\n📝 *PASSO 2 de 4*\nAgora, selecione seu tipo de acesso:\n\n1️⃣ *Funcionário* - Fazer check-in/out\n2️⃣ *Gerente* - Gerenciar horários da equipe\n3️⃣ *Supervisor* - Acompanhar equipe\n\n💡 Envie o número (1, 2 ou 3)\n\n0️⃣ Voltar | 9️⃣ Cancelar cadastro`;
     },
 
     /**
@@ -61,7 +61,7 @@ const MessageTemplates = {
      */
     step3_chooseCategories(name, role) {
       const roleText = role === 'manager' ? 'Gerente' : role === 'supervisor' ? 'Supervisor' : 'Funcionário';
-      return `🎯 *PASSO 3 de 4*\nÓtimo, ${name}! Agora me diga em qual(is) categoria(s) você trabalha:\n\n1️⃣ Bar 🍺\n2️⃣ Restaurante 🍽️\n3️⃣ Padaria 🥖\n4️⃣ Café ☕\n5️⃣ Lanchonete 🍔\n6️⃣ Outro\n\n💡 _Você pode escolher múltiplas categorias!_\n_Exemplos:_ "1" ou "1,2" ou "1 3 5"`;
+      return `🎯 *PASSO 3 de 4*\nÓtimo, ${name}! Agora me diga em qual(is) categoria(s) você trabalha:\n\n1️⃣ Bar 🍺\n2️⃣ Restaurante 🍽️\n3️⃣ Padaria 🥖\n4️⃣ Café ☕\n5️⃣ Lanchonete 🍔\n6️⃣ Outro\n\n💡 _Você pode escolher múltiplas categorias!_\n_Exemplos:_ "1" ou "1,2" ou "1 3 5"\n\n0️⃣ Voltar | 9️⃣ Cancelar cadastro`;
     },
 
     /**
@@ -69,7 +69,7 @@ const MessageTemplates = {
      */
     step4_askPassword(name, role) {
       const roleText = role === 'manager' ? 'Gerente' : 'Supervisor';
-      return `🔐 *PASSO 4 de 4*\nPara cargos administrativos (${roleText}), é necessária uma senha de autorização.\n\nPor favor, *envie a senha* fornecida pela empresa:\n\n💡 _Se você não possui a senha, entre em contato com seu gerente_`;
+      return `🔐 *PASSO 4 de 4*\nPara cargos administrativos (${roleText}), é necessária uma senha de autorização.\n\nPor favor, *envie a senha* fornecida pela empresa:\n\n💡 _Se você não possui a senha, entre em contato com seu gerente_\n\n0️⃣ Voltar | 9️⃣ Cancelar cadastro`;
     },
 
     /**
@@ -105,7 +105,7 @@ const MessageTemplates = {
      */
     userAlreadyExists(name, role) {
       const roleText = role === 'manager' ? 'Gerente' : role === 'supervisor' ? 'Supervisor' : 'Funcionário';
-      return `👤 *Olá, ${name}!*\n\n✅ Você já está cadastrado como *${roleText}*!\n\nEnvie *MENU* para ver suas opções.`;
+      return `👤 *Olá, ${name}!*\n\n✅ Você já está cadastrado como *${roleText}*!\n\n9️⃣ Ver menu principal`;
     },
 
     /**
@@ -234,21 +234,21 @@ const MessageTemplates = {
    * Staff menu
    */
   staffMenu(name) {
-    return `👤 *Olá, ${name}!*\n\n📋 Selecione uma opção:\n\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n5️⃣ Ver Meu Histórico\n6️⃣ Sair\n\n💡 _Envie o número ou comando_`;
+    return `👤 *Olá, ${name}!*\n\n📋 Selecione uma opção:\n\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n5️⃣ Ver Meu Histórico\n\n0️⃣ Sair\n9️⃣ Atualizar menu`;
   },
 
   /**
-   * Manager menu
+   * Manager menu - Full check-in + management
    */
   managerMenu(name) {
-    return `👔 *Olá, Gerente ${name}!*\n\n📋 Painel de Gestão:\n\n1️⃣ Ver Todos os Horários\n2️⃣ Buscar Usuário\n3️⃣ Definir Horas Semanais\n4️⃣ Editar Categorias\n5️⃣ Meu Check-in\n6️⃣ Status Geral\n7️⃣ Sair\n\n💡 _Envie apenas o número_`;
+    return `👔 *Olá, Gerente ${name}!*\n\n📋 Painel de Gestão:\n\n*Check-in Pessoal:*\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n5️⃣ Ver Meu Histórico\n\n*Gestão de Equipe:*\n6️⃣ Ver Todos os Horários\n7️⃣ Buscar Usuário\n8️⃣ Definir Horas Semanais\n9️⃣ Editar Categorias\nA️⃣ Editar Horários\n\n0️⃣ Sair`;
   },
 
   /**
-   * Supervisor menu
+   * Supervisor menu - Full check-in + team management
    */
   supervisorMenu(name) {
-    return `👨‍💼 *Olá, Supervisor ${name}!*\n\n📋 Gestão de Equipe:\n\n1️⃣ Ver Equipe Ativa\n2️⃣ Histórico da Equipe\n3️⃣ Sair\n\n💡 _Envie o número ou comando_`;
+    return `👨‍💼 *Olá, Supervisor ${name}!*\n\n📋 Gestão de Equipe:\n\n*Check-in Pessoal:*\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n\n*Equipe:*\n5️⃣ Ver Equipe Ativa\n6️⃣ Histórico da Equipe\n7️⃣ Editar Horários\n8️⃣ Ver Meu Histórico\n\n0️⃣ Sair\n9️⃣ Atualizar menu`;
   },
 
   /**
@@ -488,7 +488,7 @@ const MessageTemplates = {
   conversation: {
     // Busca de usuário
     searchUser_start() {
-      return `🔍 *Buscar Usuário*\n\nDigite o *nome* (ou parte do nome) da pessoa que você procura:\n\n💡 _Exemplo: João_ ou _Maria_\n\nEnvie *CANCELAR* para voltar.`;
+      return `🔍 *Buscar Usuário*\n\nDigite o *nome* (ou parte do nome) da pessoa que você procura:\n\n💡 _Exemplo: João_ ou _Maria_\n\n0️⃣ Voltar | 9️⃣ Menu Principal`;
     },
 
     searchUser_results(results, searchTerm) {
@@ -504,8 +504,8 @@ const MessageTemplates = {
         }
       });
 
-      lines.push(`\n💡 _Digite o número do usuário (1-${results.length}):_`);
-      lines.push(`Ou *CANCELAR* para voltar`);
+      lines.push(`\n💡 _Digite o número (1-${results.length})_`);
+      lines.push(`\n0️⃣ Voltar | 9️⃣ Menu Principal`);
 
       return lines.join('\n');
     },
@@ -520,12 +520,12 @@ const MessageTemplates = {
     },
 
     searchUser_noResults(searchTerm) {
-      return `🔍 *Nenhum resultado*\n\nNão encontrei ninguém com "${searchTerm}".\n\nTente novamente com outro nome ou envie *CANCELAR*.`;
+      return `🔍 *Nenhum resultado*\n\nNão encontrei ninguém com "${searchTerm}".\n\nTente novamente com outro nome.\n\n0️⃣ Voltar | 9️⃣ Menu Principal`;
     },
 
     // Definir horas esperadas
     setHours_start() {
-      return `⏰ *Definir Horas Semanais*\n\nPrimeiro, vamos encontrar o funcionário.\n\nDigite o *nome* da pessoa:\n\n💡 _Exemplo: João_`;
+      return `⏰ *Definir Horas Semanais*\n\nPrimeiro, vamos encontrar o funcionário.\n\nDigite o *nome* da pessoa:\n\n💡 _Exemplo: João_\n\n0️⃣ Voltar | 9️⃣ Menu Principal`;
     },
 
     setHours_askHours(userName) {
@@ -538,7 +538,7 @@ const MessageTemplates = {
 
     // Editar categorias
     editCategory_start() {
-      return `🎯 *Editar Categorias*\n\nPrimeiro, vamos encontrar o usuário.\n\nDigite o *nome* da pessoa:\n\n💡 _Exemplo: Maria_`;
+      return `🎯 *Editar Categorias*\n\nPrimeiro, vamos encontrar o usuário.\n\nDigite o *nome* da pessoa:\n\n💡 _Exemplo: Maria_\n\n0️⃣ Voltar | 9️⃣ Menu Principal`;
     },
 
     editCategory_askCategories(userName, currentCategories) {
@@ -561,6 +561,80 @@ const MessageTemplates = {
       const catList = categories.map(c => `${catEmojis[c] || '📋'} ${c.charAt(0).toUpperCase() + c.slice(1)}`).join(', ');
 
       return `✅ *Categorias atualizadas!*\n\n${userName} agora está em:\n${catList}`;
+    },
+
+    // Editar horários (timestamps)
+    editHours_start() {
+      return `✏️ *Editar Horários*\n\nPrimeiro, vamos encontrar o funcionário.\n\nDigite o *nome* da pessoa:\n\n💡 _Exemplo: João_\n\n0️⃣ Voltar | 9️⃣ Menu Principal`;
+    },
+
+    editHours_showCheckins(userName, checkins) {
+      const lines = [`📊 *Horários de ${userName}*\n`];
+
+      checkins.forEach((checkin, index) => {
+        const icon = {
+          checkin: '🟢',
+          checkout: '🔴',
+          break: '🟡',
+          return: '🔵'
+        }[checkin.type] || '⚪';
+
+        const date = new Date(checkin.timestamp);
+        const dateStr = date.toLocaleString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'America/Sao_Paulo'
+        });
+
+        const typeText = {
+          checkin: 'Check-in',
+          checkout: 'Check-out',
+          break: 'Pausa',
+          return: 'Retorno'
+        }[checkin.type] || checkin.type;
+
+        lines.push(`${index + 1}️⃣ ${icon} ${typeText} - ${dateStr}`);
+
+        if (checkin.edited_by) {
+          lines.push(`   ✏️ _Editado_`);
+        }
+      });
+
+      lines.push(`\n💡 _Selecione o número (1-${checkins.length}) para editar_`);
+      lines.push(`\n0️⃣ Voltar | 9️⃣ Menu Principal`);
+
+      return lines.join('\n');
+    },
+
+    editHours_askNewTime(userName, checkin) {
+      const date = new Date(checkin.timestamp);
+      const currentTime = date.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'America/Sao_Paulo'
+      });
+
+      const typeText = {
+        checkin: 'Check-in',
+        checkout: 'Check-out',
+        break: 'Pausa',
+        return: 'Retorno'
+      }[checkin.type] || checkin.type;
+
+      return `✏️ *Editar ${typeText} de ${userName}*\n\n⏰ Horário atual: *${currentTime}*\n\nEnvie o novo horário no formato HH:MM\n\n💡 _Exemplos:_\n• 08:00\n• 14:30\n• 18:15\n\n0️⃣ Cancelar | 9️⃣ Menu Principal`;
+    },
+
+    editHours_success(userName, checkinType, oldTime, newTime, editorName) {
+      const typeText = {
+        checkin: 'Check-in',
+        checkout: 'Check-out',
+        break: 'Pausa',
+        return: 'Retorno'
+      }[checkinType] || checkinType;
+
+      return `✅ *Horário atualizado!*\n\n👤 ${userName} - ${typeText}\n\nAntes: ${oldTime}\nDepois: ${newTime}\n\n✏️ Alterado por: ${editorName}`;
     },
 
     // Cancelamento

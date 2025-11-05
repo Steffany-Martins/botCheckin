@@ -76,6 +76,40 @@ function cancelRegistration(phone) {
 }
 
 /**
+ * Volta para o step anterior
+ */
+function goBackStep(phone) {
+  const state = registrationStates.get(phone);
+  if (!state) {
+    return { error: 'NO_STATE' };
+  }
+
+  if (state.step === 1) {
+    // Já está no primeiro step, não pode voltar
+    return { error: 'ALREADY_FIRST_STEP', message: 'Você já está no primeiro passo. Envie *CANCELAR* para sair.' };
+  }
+
+  // Voltar um step
+  state.step = state.step - 1;
+
+  // Limpar dados do step atual dependendo de onde está voltando
+  if (state.step === 1) {
+    // Voltando para step 1, limpar nome
+    state.name = null;
+  } else if (state.step === 2) {
+    // Voltando para step 2, limpar cargo
+    state.role = null;
+  } else if (state.step === 3) {
+    // Voltando para step 3, limpar categorias
+    state.categories = [];
+  }
+
+  registrationStates.set(phone, state);
+
+  return { success: true, step: state.step, state };
+}
+
+/**
  * Completa o registro e limpa estado
  */
 function completeRegistration(phone) {
@@ -241,6 +275,7 @@ module.exports = {
   startRegistration,
   getRegistrationState,
   cancelRegistration,
+  goBackStep,
   completeRegistration,
   processStep1,
   processStep2,

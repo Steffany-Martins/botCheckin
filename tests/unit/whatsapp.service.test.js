@@ -104,7 +104,8 @@ describe('WhatsApp Service', () => {
         expect(message).toContain('John');
         expect(message).toContain('1️⃣');
         expect(message).toContain('Check-in');
-        expect(message).toContain('6️⃣');
+        expect(message).toContain('0️⃣');
+        expect(message).toContain('9️⃣');
       });
     });
 

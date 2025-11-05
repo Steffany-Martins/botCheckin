@@ -19,6 +19,7 @@ jest.mock('../../src/services/database.service', () => {
     },
     CheckinDB: {
       create: jest.fn(),
+      createWithGPS: jest.fn(),
       getUserHistory: jest.fn(),
       updateTimestamp: jest.fn(),
       delete: jest.fn()
@@ -39,6 +40,15 @@ jest.mock('../../src/services/whatsapp.service', () => {
     sendWhatsAppMessage: jest.fn()
   };
 });
+
+// Mock location utility
+jest.mock('../../src/utils/location', () => ({
+  verifyLocation: jest.fn(() => ({
+    verified: true,
+    distance: 50,
+    message: '✅ Dentro do raio (50m)'
+  }))
+}));
 
 const { UserDB, CheckinDB, SessionDB } = require('../../src/services/database.service');
 const { sendWhatsAppMessage } = require('../../src/services/whatsapp.service');
@@ -109,7 +119,7 @@ describe('Webhook Integration Tests', () => {
         const mockUser = { id: 1, name: 'John', phone: '+15551234567', role: 'staff' };
         UserDB.findByPhone.mockReturnValue(mockUser);
         SessionDB.isActive.mockReturnValue(false);
-        CheckinDB.create.mockReturnValue(1);
+        CheckinDB.createWithGPS.mockReturnValue(1);
 
         const response = await request(app)
           .post('/webhook')
@@ -120,14 +130,14 @@ describe('Webhook Integration Tests', () => {
           .expect(200);
 
         expect(response.text).toContain('Check-in');
-        expect(CheckinDB.create).toHaveBeenCalledWith(1, 'checkin', null);
+        expect(CheckinDB.createWithGPS).toHaveBeenCalledWith(1, 'checkin', null, null, null, 1, null);
       });
 
       it('should record break with location', async () => {
         const mockUser = { id: 1, name: 'John', phone: '+15551234567', role: 'staff' };
         UserDB.findByPhone.mockReturnValue(mockUser);
         SessionDB.isActive.mockReturnValue(true);
-        CheckinDB.create.mockReturnValue(2);
+        CheckinDB.createWithGPS.mockReturnValue(2);
 
         const response = await request(app)
           .post('/webhook')
@@ -138,7 +148,7 @@ describe('Webhook Integration Tests', () => {
           .expect(200);
 
         expect(response.text).toContain('Pausa');
-        expect(CheckinDB.create).toHaveBeenCalledWith(1, 'break', 'Escritorio');
+        expect(CheckinDB.createWithGPS).toHaveBeenCalledWith(1, 'break', 'Escritorio', null, null, 1, null);
       });
 
       it('should notify supervisor on check-in', async () => {
@@ -159,7 +169,7 @@ describe('Webhook Integration Tests', () => {
         UserDB.findByPhone.mockReturnValue(mockUser);
         UserDB.findById.mockReturnValue(mockSupervisor);
         SessionDB.isActive.mockReturnValue(true);
-        CheckinDB.create.mockReturnValue(1);
+        CheckinDB.createWithGPS.mockReturnValue(1);
 
         await request(app)
           .post('/webhook')
@@ -268,7 +278,7 @@ describe('Webhook Integration Tests', () => {
         const response = await request(app)
           .post('/webhook')
           .send({
-            Body: '6',
+            Body: '0',
             From: 'whatsapp:+15551234567'
           })
           .expect(200);

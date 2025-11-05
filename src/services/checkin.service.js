@@ -1,12 +1,36 @@
 const { CheckinDB, UserDB } = require('./database.service');
 const { sendWhatsAppMessage, MessageTemplates } = require('./whatsapp.service');
+const { verifyLocation } = require('../utils/location');
 
 /**
  * Record a checkin and notify supervisor if applicable
+ * @param {object} user - User object
+ * @param {string} type - Checkin type (checkin, checkout, break, return)
+ * @param {string|null} location - Location text
+ * @param {number|null} latitude - GPS latitude (optional)
+ * @param {number|null} longitude - GPS longitude (optional)
  */
-async function recordCheckin(user, type, location = null) {
-  // Create checkin record
-  const checkinId = CheckinDB.create(user.id, type, location);
+async function recordCheckin(user, type, location = null, latitude = null, longitude = null) {
+  // Verify GPS location if provided
+  let locationVerified = 1; // Default to verified if no GPS
+  let distanceMeters = null;
+
+  if (latitude && longitude) {
+    const verification = verifyLocation(latitude, longitude);
+    locationVerified = verification.verified ? 1 : 0;
+    distanceMeters = verification.distance;
+  }
+
+  // Create checkin record with GPS data
+  const checkinId = CheckinDB.createWithGPS(
+    user.id,
+    type,
+    location,
+    latitude,
+    longitude,
+    locationVerified,
+    distanceMeters
+  );
 
   // Notify supervisor if exists
   if (user.supervisor_id) {
@@ -28,7 +52,11 @@ async function recordCheckin(user, type, location = null) {
     }
   }
 
-  return checkinId;
+  return {
+    checkinId,
+    locationVerified: locationVerified === 1,
+    distance: distanceMeters
+  };
 }
 
 /**

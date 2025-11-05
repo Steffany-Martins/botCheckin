@@ -17,21 +17,31 @@ const COMMAND_MAP = {
     '3': 'RETURN',
     '4': 'CHECKOUT',
     '5': 'STAT',
-    '6': 'LOGOUT'
+    '0': 'LOGOUT'
   },
   manager: {
-    '1': 'ALL_SCHEDULES',
-    '2': 'SEARCH_USER',
-    '3': 'SET_HOURS',
-    '4': 'EDIT_CATEGORY',
-    '5': 'MY_CHECKIN',
-    '6': 'STATUS',
-    '7': 'LOGOUT'
+    '1': 'CHECKIN',
+    '2': 'BREAK',
+    '3': 'RETURN',
+    '4': 'CHECKOUT',
+    '5': 'STAT',
+    '6': 'ALL_SCHEDULES',
+    '7': 'SEARCH_USER',
+    '8': 'SET_HOURS',
+    '9': 'EDIT_CATEGORY',
+    'A': 'EDIT_HOURS',
+    '0': 'LOGOUT'
   },
   supervisor: {
-    '1': 'TEAM_ACTIVE',
-    '2': 'TEAM_HISTORY',
-    '3': 'LOGOUT'
+    '1': 'CHECKIN',
+    '2': 'BREAK',
+    '3': 'RETURN',
+    '4': 'CHECKOUT',
+    '5': 'TEAM_ACTIVE',
+    '6': 'TEAM_HISTORY',
+    '7': 'EDIT_HOURS',
+    '8': 'STAT',
+    '0': 'LOGOUT'
   }
 };
 
@@ -42,11 +52,12 @@ function parseCommand(body, userRole) {
   const tokens = body.split(/\s+/);
   const cmd = tokens[0] ? tokens[0].toUpperCase() : '';
 
-  // Check if it's a numeric menu option
-  if (/^[1-9]$/.test(body) && body.length <= 2) {
+  // Check if it's a numeric menu option (including 0 and A for manager)
+  if (/^[0-9A]$/i.test(body) && body.length === 1) {
     const commandMap = COMMAND_MAP[userRole] || COMMAND_MAP.staff;
+    const key = body.toUpperCase();
     return {
-      action: commandMap[body],
+      action: commandMap[key],
       cmd,
       tokens
     };
@@ -109,9 +120,25 @@ async function handleLogin(req, res, user, from, tokens) {
  */
 async function handleCheckinAction(req, res, user, action, tokens) {
   const location = tokens.slice(1).join(' ') || null;
-  await checkinService.recordCheckin(user, action.toLowerCase(), location);
 
-  const confirmMsg = MessageTemplates.checkinConfirmation(action.toLowerCase(), location, user.name);
+  // Extract GPS coordinates from Twilio request (optional)
+  const latitude = req.body.Latitude ? parseFloat(req.body.Latitude) : null;
+  const longitude = req.body.Longitude ? parseFloat(req.body.Longitude) : null;
+
+  // Record check-in with optional GPS verification
+  const result = await checkinService.recordCheckin(user, action.toLowerCase(), location, latitude, longitude);
+
+  // Build confirmation message with GPS info if available
+  let confirmMsg = MessageTemplates.checkinConfirmation(action.toLowerCase(), location, user.name);
+
+  if (latitude && longitude) {
+    const gpsInfo = result.locationVerified
+      ? `\n\n✅ *Local verificado* (${result.distance}m do restaurante)`
+      : `\n\n⚠️ *Atenção:* Você está ${result.distance}m do restaurante (máx: 200m)`;
+
+    confirmMsg = confirmMsg + gpsInfo;
+  }
+
   const menu = getMenuForRole(user.role, user.name);
   res.type('text/xml').send(twimlMessage(confirmMsg + '\n\n' + menu));
 }
@@ -297,6 +324,10 @@ async function handleConversationSteps(req, res, from, body, user) {
 
   if (state.type === 'edit_category') {
     return handleEditCategoryConversation(req, res, from, body, user, state);
+  }
+
+  if (state.type === 'edit_hours') {
+    return handleEditHoursConversation(req, res, from, body, user, state);
   }
 
   // Tipo desconhecido, cancelar
@@ -490,6 +521,109 @@ async function handleEditCategoryConversation(req, res, from, body, user, state)
 }
 
 /**
+ * Handle edit hours conversation
+ */
+async function handleEditHoursConversation(req, res, from, body, user, state) {
+  const menu = getMenuForRole(user.role, user.name);
+
+  // Steps 1 and 2: Compartilhados com search user (buscar e selecionar usuário)
+  if (state.step === 1) {
+    // Step 1: Receber nome para busca
+    const result = conversationService.processSearchUser_Step1(from, body);
+
+    if (result.error === 'SEARCH_TOO_SHORT') {
+      const message = result.message;
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    if (result.error === 'NO_RESULTS') {
+      const message = result.message + '\n\nTente novamente ou envie *9️⃣* para voltar ao menu.';
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    // Mostrar resultados
+    const message = MessageTemplates.conversation.searchUser_results(result.results, result.searchTerm);
+    return res.type('text/xml').send(twimlMessage(message));
+  }
+
+  if (state.step === 2) {
+    // Step 2: Selecionar usuário da lista
+    const result = conversationService.processSearchUser_Step2(from, body);
+
+    if (result.error) {
+      const message = result.message;
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    // Usuário selecionado - buscar check-ins e avançar para step 3
+    const convState = conversationService.getConversationState(from);
+    convState.selectedUser = result.user;
+    convState.step = 3;
+
+    // Processar step 3 imediatamente (buscar check-ins)
+    const step3Result = conversationService.processEditHours_Step3(from, '');
+
+    if (step3Result.error === 'NO_CHECKINS') {
+      const message = step3Result.message;
+      return res.type('text/xml').send(twimlMessage(message + '\n\n' + menu));
+    }
+
+    // Mostrar check-ins para seleção
+    const message = MessageTemplates.conversation.editHours_showCheckins(
+      step3Result.user.name,
+      step3Result.checkins
+    );
+    return res.type('text/xml').send(twimlMessage(message));
+  }
+
+  if (state.step === 4) {
+    // Step 4: Selecionar check-in da lista
+    const result = conversationService.processEditHours_Step4(from, body);
+
+    if (result.error === 'INVALID_SELECTION') {
+      const message = result.message;
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    // Check-in selecionado - pedir novo horário
+    const message = MessageTemplates.conversation.editHours_askNewTime(
+      result.user.name,
+      result.checkin
+    );
+    return res.type('text/xml').send(twimlMessage(message));
+  }
+
+  if (state.step === 5) {
+    // Step 5: Processar novo horário
+    const result = conversationService.processEditHours_Step5(from, body);
+
+    if (result.error === 'INVALID_TIME_FORMAT' || result.error === 'INVALID_TIME') {
+      const message = result.message;
+      return res.type('text/xml').send(twimlMessage(message));
+    }
+
+    if (result.error === 'UPDATE_FAILED') {
+      const message = result.message;
+      return res.type('text/xml').send(twimlMessage(message + '\n\n' + menu));
+    }
+
+    // Sucesso!
+    const message = MessageTemplates.conversation.editHours_success(
+      result.user.name,
+      result.checkin.type,
+      result.oldTimestamp,
+      result.newTimestamp,
+      result.editorUser.name
+    );
+    return res.type('text/xml').send(twimlMessage(message + '\n\n' + menu));
+  }
+
+  // Step desconhecido
+  conversationService.cancelConversation(from);
+  return res.type('text/xml').send(twimlMessage(menu));
+}
+
+/**
  * Handle registration steps process
  */
 async function handleRegistrationSteps(req, res, from, body) {
@@ -502,11 +636,35 @@ async function handleRegistrationSteps(req, res, from, body) {
     return res.type('text/xml').send(twimlMessage(message));
   }
 
-  // Permitir cancelamento em qualquer step
-  if (body.toUpperCase() === 'CANCELAR') {
-    registrationService.cancelRegistration(from);
-    const message = MessageTemplates.registration.cancelled();
-    return res.type('text/xml').send(twimlMessage(message));
+  // 0 = Cancelar (step 1) ou Voltar (steps 2-4)
+  if (body === '0') {
+    if (state.step === 1) {
+      // Step 1: Cancel registration
+      registrationService.cancelRegistration(from);
+      const message = MessageTemplates.registration.cancelled();
+      return res.type('text/xml').send(twimlMessage(message));
+    } else {
+      // Steps 2-4: Go back
+      const result = registrationService.goBackStep(from);
+
+      if (result.error === 'ALREADY_FIRST_STEP') {
+        return res.type('text/xml').send(twimlMessage(result.message));
+      }
+
+      // Show previous step message
+      const updatedState = result.state;
+      let message;
+
+      if (updatedState.step === 1) {
+        message = MessageTemplates.registration.step1_welcome();
+      } else if (updatedState.step === 2) {
+        message = MessageTemplates.registration.step2_chooseRole(updatedState.name);
+      } else if (updatedState.step === 3) {
+        message = MessageTemplates.registration.step3_chooseCategories(updatedState.name, updatedState.role);
+      }
+
+      return res.type('text/xml').send(twimlMessage(message));
+    }
   }
 
   // Processar de acordo com o step atual
@@ -616,11 +774,11 @@ async function webhookHandler(req, res) {
 
   const { action, cmd, tokens } = parseCommand(body, 'staff');
 
-  // Handle global navigation commands (work from anywhere)
-  const upperBody = body.toUpperCase();
+  // Handle global navigation with numbers (work from anywhere)
+  // 9️⃣ = Menu Principal, 0️⃣ = Back/Cancel (context-dependent)
 
-  // MENU command - return to main menu from anywhere
-  if (upperBody === 'MENU') {
+  // 9 = Menu Principal - return to main menu from anywhere
+  if (body === '9') {
     registrationService.cancelRegistration(from);
     conversationService.cancelConversation(from);
 
@@ -638,14 +796,6 @@ async function webhookHandler(req, res) {
   // Check if user is in registration process
   if (registrationService.isInRegistrationProcess(from)) {
     return handleRegistrationSteps(req, res, from, body);
-  }
-
-  // Handle CANCELAR at any time
-  if (cmd === 'CANCELAR') {
-    registrationService.cancelRegistration(from);
-    conversationService.cancelConversation(from);
-    const message = MessageTemplates.registration.cancelled();
-    return res.type('text/xml').send(twimlMessage(message));
   }
 
   // Handle REGISTER command (old style - kept for compatibility)
@@ -717,6 +867,13 @@ async function webhookHandler(req, res) {
     // Start edit category conversation
     conversationService.startEditCategory(from);
     const message = MessageTemplates.conversation.editCategory_start();
+    return res.type('text/xml').send(twimlMessage(message));
+  }
+
+  if (userAction === 'EDIT_HOURS') {
+    // Start edit hours conversation (manager/supervisor only)
+    conversationService.startEditHours(from, user);
+    const message = MessageTemplates.conversation.editHours_start();
     return res.type('text/xml').send(twimlMessage(message));
   }
 

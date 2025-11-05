@@ -3,7 +3,7 @@
  * Sem comandos complexos - apenas números e respostas simples
  */
 
-const { UserDB } = require('./database.service');
+const { UserDB, CheckinDB } = require('./database.service');
 
 // Armazena estados de conversação ativas
 const conversationStates = new Map();
@@ -17,7 +17,8 @@ const CONVERSATION_TIMEOUT = 5 * 60 * 1000;
 const ConversationType = {
   SEARCH_USER: 'search_user',
   SET_HOURS: 'set_hours',
-  EDIT_CATEGORY: 'edit_category'
+  EDIT_CATEGORY: 'edit_category',
+  EDIT_HOURS: 'edit_hours'
 };
 
 /**
@@ -218,6 +219,134 @@ function processEditCategory_Step3(phone, input) {
 }
 
 /**
+ * Inicia conversação para editar horários
+ */
+function startEditHours(phone, editorUser) {
+  conversationStates.set(phone, {
+    type: ConversationType.EDIT_HOURS,
+    step: 1, // 1=buscar usuário, 2=selecionar, 3=mostrar checkins, 4=selecionar checkin, 5=digitar novo horário
+    searchResults: [],
+    selectedUser: null,
+    checkins: [],
+    selectedCheckin: null,
+    editorUser: editorUser, // usuário que está editando (para audit trail)
+    startedAt: Date.now()
+  });
+  return { success: true };
+}
+
+/**
+ * Processa edição de horários - Step 3: Mostrar check-ins recentes
+ */
+function processEditHours_Step3(phone, input) {
+  const state = conversationStates.get(phone);
+  if (!state || !state.selectedUser) return { error: 'NO_STATE' };
+
+  // Buscar últimos 10 check-ins do usuário
+  const checkins = CheckinDB.getRecentByUser(state.selectedUser.id, 10);
+
+  if (!checkins || checkins.length === 0) {
+    conversationStates.delete(phone);
+    return {
+      error: 'NO_CHECKINS',
+      message: `${state.selectedUser.name} ainda não tem registros de ponto.`
+    };
+  }
+
+  // Salvar check-ins e avançar para step 4
+  state.checkins = checkins;
+  state.step = 4;
+  conversationStates.set(phone, state);
+
+  return { success: true, user: state.selectedUser, checkins };
+}
+
+/**
+ * Processa edição de horários - Step 4: Selecionar check-in da lista
+ */
+function processEditHours_Step4(phone, input) {
+  const state = conversationStates.get(phone);
+  if (!state || !state.checkins) return { error: 'NO_STATE' };
+
+  const selection = parseInt(input.trim());
+
+  if (isNaN(selection) || selection < 1 || selection > state.checkins.length) {
+    return {
+      error: 'INVALID_SELECTION',
+      message: `Digite um número de 1 a ${state.checkins.length}`
+    };
+  }
+
+  const selectedCheckin = state.checkins[selection - 1];
+
+  // Salvar check-in selecionado e avançar para step 5
+  state.selectedCheckin = selectedCheckin;
+  state.step = 5;
+  conversationStates.set(phone, state);
+
+  return { success: true, checkin: selectedCheckin, user: state.selectedUser };
+}
+
+/**
+ * Processa edição de horários - Step 5: Receber novo horário em formato HH:MM
+ */
+function processEditHours_Step5(phone, input) {
+  const state = conversationStates.get(phone);
+  if (!state || !state.selectedCheckin) return { error: 'NO_STATE' };
+
+  const timeMatch = input.trim().match(/^(\d{1,2}):(\d{2})$/);
+
+  if (!timeMatch) {
+    return {
+      error: 'INVALID_TIME_FORMAT',
+      message: 'Digite o horário no formato HH:MM\n\n💡 _Exemplo: 09:30 ou 14:45_'
+    };
+  }
+
+  const hours = parseInt(timeMatch[1]);
+  const minutes = parseInt(timeMatch[2]);
+
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+    return {
+      error: 'INVALID_TIME',
+      message: 'Horário inválido. Horas devem ser 0-23 e minutos 0-59.'
+    };
+  }
+
+  // Criar novo timestamp mantendo a data original
+  const oldTimestamp = new Date(state.selectedCheckin.timestamp);
+  const newTimestamp = new Date(oldTimestamp);
+  newTimestamp.setHours(hours, minutes, 0, 0);
+
+  // Atualizar no banco de dados com audit trail
+  const result = CheckinDB.editTimestamp(
+    state.selectedCheckin.id,
+    newTimestamp.toISOString(),
+    state.editorUser.id
+  );
+
+  if (!result || !result.success) {
+    conversationStates.delete(phone);
+    return {
+      error: 'UPDATE_FAILED',
+      message: 'Erro ao atualizar horário. Tente novamente.'
+    };
+  }
+
+  // Limpar conversação
+  conversationStates.delete(phone);
+
+  return {
+    success: true,
+    user: state.selectedUser,
+    checkin: state.selectedCheckin,
+    oldTimestamp: oldTimestamp,
+    newTimestamp: newTimestamp,
+    editorUser: state.editorUser
+  };
+}
+
+/**
  * Cancela conversação ativa
  */
 function cancelConversation(phone) {
@@ -242,6 +371,10 @@ module.exports = {
   processSetHours_Step3,
   startEditCategory,
   processEditCategory_Step3,
+  startEditHours,
+  processEditHours_Step3,
+  processEditHours_Step4,
+  processEditHours_Step5,
   cancelConversation,
   clearAllConversations
 };
