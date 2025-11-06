@@ -106,7 +106,7 @@ async function handleRegister(req, res, from, tokens) {
  */
 async function handleLogin(req, res, user, from, tokens) {
   const password = tokens[1];
-  const result = authService.loginUser(user, from, password);
+  const result = await authService.loginUser(user, from, password);
 
   if (!result.success) {
     const message = MessageTemplates.errors.wrongPassword();
