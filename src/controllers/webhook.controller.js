@@ -848,6 +848,12 @@ async function webhookHandler(req, res) {
 
   // Check if user is in conversation process
   if (conversationService.isInConversation(from)) {
+    // Allow "0" to exit conversation and return to menu
+    if (body.trim() === '0') {
+      conversationService.cancelConversation(from);
+      const menu = getMenuForRole(user.role, user.name);
+      return res.type('text/xml').send(twimlMessage('❌ Operação cancelada.\n\n' + menu));
+    }
     return handleConversationSteps(req, res, from, body, user);
   }
 
