@@ -17,6 +17,7 @@ const COMMAND_MAP = {
     '3': 'RETURN',
     '4': 'CHECKOUT',
     '5': 'STAT',
+    '9': 'MENU',
     '0': 'LOGOUT'
   },
   manager: {
@@ -29,7 +30,7 @@ const COMMAND_MAP = {
     '7': 'SEARCH_USER',
     '8': 'SET_HOURS',
     '9': 'EDIT_CATEGORY',
-    'A': 'EDIT_HOURS',
+    '10': 'EDIT_HOURS',
     '0': 'LOGOUT'
   },
   supervisor: {
@@ -41,6 +42,7 @@ const COMMAND_MAP = {
     '6': 'TEAM_HISTORY',
     '7': 'EDIT_HOURS',
     '8': 'STAT',
+    '9': 'MENU',
     '0': 'LOGOUT'
   }
 };
@@ -52,10 +54,11 @@ function parseCommand(body, userRole) {
   const tokens = body.split(/\s+/);
   const cmd = tokens[0] ? tokens[0].toUpperCase() : '';
 
-  // Check if it's a numeric menu option (including 0 and A for manager)
-  if (/^[0-9A]$/i.test(body) && body.length === 1) {
+  // Check if it's a numeric menu option (supports 0-10 and 9 for menu)
+  const trimmedBody = body.trim();
+  if (/^[0-9]+$/i.test(trimmedBody)) {
     const commandMap = COMMAND_MAP[userRole] || COMMAND_MAP.staff;
-    const key = body.toUpperCase();
+    const key = trimmedBody;
     return {
       action: commandMap[key],
       cmd,
@@ -905,6 +908,12 @@ async function webhookHandler(req, res) {
 
   if (userAction === 'TEAM_HISTORY') {
     return handleTeamHistory(req, res, user);
+  }
+
+  if (userAction === 'MENU') {
+    // Show menu
+    const menu = getMenuForRole(user.role, user.name);
+    return res.type('text/xml').send(twimlMessage(menu));
   }
 
   if (userAction === 'EDIT_TIME') {
