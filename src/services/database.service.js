@@ -14,6 +14,11 @@ const supabase = createClient(
 
 // For direct PostgreSQL queries (when needed)
 const { Pool } = require('pg');
+const dns = require('dns');
+
+// Force IPv4 resolution to avoid IPv6 connection issues
+dns.setDefaultResultOrder('ipv4first');
+
 const pool = new Pool({
   connectionString: process.env.DB_URL,
   ssl: process.env.NODE_ENV === 'production' ? {
