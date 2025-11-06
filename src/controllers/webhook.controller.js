@@ -480,7 +480,8 @@ async function handleEditCategoryConversation(req, res, from, body, user, state)
     }
 
     // Usuário selecionado - pedir categorias
-    const message = MessageTemplates.conversation.editCategory_askCategories(result.user.name);
+    const currentCategories = result.user.categories ? result.user.categories.split(',') : [];
+    const message = MessageTemplates.conversation.editCategory_askCategories(result.user.name, currentCategories);
     return res.type('text/xml').send(twimlMessage(message));
   }
 

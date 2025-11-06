@@ -527,7 +527,7 @@ const MessageTemplates = {
     },
 
     setHours_askHours(userName) {
-      return `⏰ *Definir Horas para ${userName}*\n\nQuantas horas por semana são esperadas?\n\n💡 _Exemplos:_\n• 40 (tempo integral)\n• 20 (meio período)\n• 44 (com horas extras)\n\nDigite o número de horas:`;
+      return `⏰ *Definir Horas para ${userName}*\n\nQuantas horas por semana são esperadas?\n\n💡 _Exemplos:_\n• 40 (tempo integral)\n• 20 (meio período)\n• 44 (com horas extras)\n\nDigite o número de horas:\n\n0️⃣ Cancelar | 9️⃣ Menu Principal`;
     },
 
     setHours_success(userName, hours) {
@@ -544,7 +544,7 @@ const MessageTemplates = {
         ? `\n📋 Categorias atuais: ${currentCategories.join(', ')}`
         : '';
 
-      return `🎯 *Editar Categorias de ${userName}*${current}\n\nEscolha as novas categorias:\n\n1️⃣ Bar 🍺\n2️⃣ Restaurante 🍽️\n3️⃣ Padaria 🥖\n4️⃣ Café ☕\n5️⃣ Lanchonete 🍔\n6️⃣ Outro\n\n💡 _Pode escolher várias:_ "1,2" ou "1 3 5"`;
+      return `🎯 *Editar Categorias de ${userName}*${current}\n\nEscolha as novas categorias:\n\n1️⃣ Bar 🍺\n2️⃣ Restaurante 🍽️\n3️⃣ Padaria 🥖\n4️⃣ Café ☕\n5️⃣ Lanchonete 🍔\n6️⃣ Outro\n\n💡 _Pode escolher várias:_ "1,2" ou "1 3 5"\n\n0️⃣ Cancelar | 9️⃣ Menu Principal`;
     },
 
     editCategory_success(userName, categories) {
