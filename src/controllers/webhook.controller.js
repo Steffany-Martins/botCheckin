@@ -806,7 +806,7 @@ async function webhookHandler(req, res) {
       return res.type('text/xml').send(twimlMessage(`📋 *Menu Principal*\n\n${menu}`));
     } else {
       // User not registered yet
-      const message = '👋 Olá! Para acessar o menu, você precisa se cadastrar primeiro.\n\nEnvie qualquer mensagem para começar o cadastro.';
+      const message = '👋 Ola! Para acessar o menu, você precisa se cadastrar primeiro.\n\nEnvie qualquer mensagem para começar o cadastro.';
       return res.type('text/xml').send(twimlMessage(message));
     }
   }

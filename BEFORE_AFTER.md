@@ -68,7 +68,7 @@ Selecione uma opcao:
 
 Você já está logado e pronto para começar!
 
-👤 *Olá, João!*
+👤 *Ola, João!*
 
 📋 Selecione uma opção:
 
@@ -97,7 +97,7 @@ Ola Gerente Ana!
 
 #### After
 ```
-👔 *Olá, Gerente Ana!*
+👔 *Ola, Gerente Ana!*
 
 📋 Painel de Gestão:
 
@@ -125,7 +125,7 @@ Ola Gerente Ana!
 
 ⏰ Horário: 04/11/2025 08:30:15
 
-👤 *Olá, João!*
+👤 *Ola, João!*
 
 📋 Selecione uma opção:
 ...
@@ -167,7 +167,7 @@ Ola Gerente Ana!
 🔵 return - 10:45 04/11
 🔴 checkout - 17:00 04/11 📍 Escritório
 
-👤 *Olá, João!*
+👤 *Ola, João!*
 
 📋 Selecione uma opção:
 ...
@@ -192,7 +192,7 @@ Ola Gerente Ana!
 ✅ *2.* Maria Santos
    👔 manager | 📱 +15559876543
 
-👔 *Olá, Gerente Ana!*
+👔 *Ola, Gerente Ana!*
 
 📋 Painel de Gestão:
 ...

@@ -21,7 +21,7 @@ The refactored BotCheckin system includes completely redesigned WhatsApp message
 
 Você já está logado e pronto para começar!
 
-👤 *Olá, João!*
+👤 *Ola, João!*
 
 📋 Selecione uma opção:
 
@@ -43,7 +43,7 @@ Você já está logado e pronto para começar!
 
 Você já está logado e pronto para começar!
 
-👔 *Olá, Gerente Ana!*
+👔 *Ola, Gerente Ana!*
 
 📋 Painel de Gestão:
 
@@ -65,7 +65,7 @@ Você já está logado e pronto para começar!
 
 Você já está logado e pronto para começar!
 
-👨‍💼 *Olá, Supervisor Carlos!*
+👨‍💼 *Ola, Supervisor Carlos!*
 
 📋 Gestão de Equipe:
 
@@ -80,11 +80,11 @@ Você já está logado e pronto para começar!
 
 #### Login Success
 ```
-👋 Olá novamente, Ana!
+👋 Ola novamente, Ana!
 
 ✅ Login realizado com sucesso!
 
-👔 *Olá, Gerente Ana!*
+👔 *Ola, Gerente Ana!*
 
 📋 Painel de Gestão:
 ...
@@ -182,7 +182,7 @@ Você foi desconectado com sucesso.
 🔵 return - 14:30 04/11
 🔴 checkout - 17:00 04/11 📍 Escritório
 
-👤 *Olá, João!*
+👤 *Ola, João!*
 
 📋 Selecione uma opção:
 ...
@@ -194,7 +194,7 @@ Você foi desconectado com sucesso.
 
 _Nenhum registro encontrado._
 
-👤 *Olá, João!*
+👤 *Ola, João!*
 
 📋 Selecione uma opção:
 ...
@@ -218,7 +218,7 @@ _Nenhum registro encontrado._
    🟢 checkin - 07:45 04/11
    🔴 checkout - 18:00 04/11
 
-👔 *Olá, Gerente Ana!*
+👔 *Ola, Gerente Ana!*
 
 📋 Painel de Gestão:
 ...
@@ -237,7 +237,7 @@ _Nenhum registro encontrado._
 ❌ *3.* João Inativo
    👤 staff | 📱 +15555555555
 
-👔 *Olá, Gerente Ana!*
+👔 *Ola, Gerente Ana!*
 
 📋 Painel de Gestão:
 ...
@@ -249,7 +249,7 @@ _Nenhum registro encontrado._
 
 _Nenhum usuário encontrado._
 
-👔 *Olá, Gerente Ana!*
+👔 *Ola, Gerente Ana!*
 
 📋 Painel de Gestão:
 ...
@@ -272,7 +272,7 @@ _Nenhum usuário encontrado._
 
 ⚪ Sem registro *Ana Lima*
 
-👨‍💼 *Olá, Supervisor Carlos!*
+👨‍💼 *Ola, Supervisor Carlos!*
 
 📋 Gestão de Equipe:
 ...
@@ -287,7 +287,7 @@ _Nenhum usuário encontrado._
 🟢 *João Silva*: checkin - 08:30 04/11 📍 Escritório
 🟢 *Ana Lima*: checkin - 08:15 04/11
 
-👨‍💼 *Olá, Supervisor Carlos!*
+👨‍💼 *Ola, Supervisor Carlos!*
 
 📋 Gestão de Equipe:
 ...
@@ -301,7 +301,7 @@ _Nenhum usuário encontrado._
 
 Checkin #123 foi corrigido com sucesso.
 
-👔 *Olá, Gerente Ana!*
+👔 *Ola, Gerente Ana!*
 
 📋 Painel de Gestão:
 ...
@@ -313,7 +313,7 @@ Checkin #123 foi corrigido com sucesso.
 
 Verifique o ID e tente novamente.
 
-👔 *Olá, Gerente Ana!*
+👔 *Ola, Gerente Ana!*
 
 📋 Painel de Gestão:
 ...
@@ -325,7 +325,7 @@ Verifique o ID e tente novamente.
 
 Checkin #123 foi removido com sucesso.
 
-👔 *Olá, Gerente Ana!*
+👔 *Ola, Gerente Ana!*
 
 📋 Painel de Gestão:
 ...
@@ -337,7 +337,7 @@ Checkin #123 foi removido com sucesso.
 
 Registro criado para usuário #2.
 
-👔 *Olá, Gerente Ana!*
+👔 *Ola, Gerente Ana!*
 
 📋 Painel de Gestão:
 ...
@@ -413,7 +413,7 @@ _Exemplo:_ 3 123 2024-01-15T08:30:00
 DEL ID_CHECKIN
 _Exemplo:_ DEL 123
 
-👔 *Olá, Gerente Ana!*
+👔 *Ola, Gerente Ana!*
 
 📋 Painel de Gestão:
 ...
@@ -429,7 +429,7 @@ OU
 
 SEARCH nome_ou_telefone
 
-👔 *Olá, Gerente Ana!*
+👔 *Ola, Gerente Ana!*
 
 📋 Painel de Gestão:
 ...
@@ -471,7 +471,7 @@ SEARCH nome_ou_telefone
 ### Bold Text
 Use asterisks: `*texto em negrito*`
 
-Example: `*Olá, Gerente Ana!*`
+Example: `*Ola, Gerente Ana!*`
 
 ### Italic Text
 Use underscores: `_texto em itálico_`

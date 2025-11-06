@@ -266,7 +266,7 @@ describe('Webhook Integration Tests', () => {
           })
           .expect(200);
 
-        expect(response.text).toContain('Olá novamente');
+        expect(response.text).toContain('Ola novamente');
         expect(SessionDB.create).toHaveBeenCalled();
       });
 

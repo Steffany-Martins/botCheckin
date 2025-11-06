@@ -102,7 +102,7 @@ Ola Gerente Ana!
 
 #### After:
 ```
-👔 *Olá, Gerente Ana!*
+👔 *Ola, Gerente Ana!*
 
 📋 Painel de Gestão:
 
@@ -265,7 +265,7 @@ Ola Gerente Ana!
 
 **New**:
 ```
-👔 *Olá, Gerente Ana!*
+👔 *Ola, Gerente Ana!*
 
 📋 Painel de Gestão:
 
@@ -293,7 +293,7 @@ Ola Gerente Ana!
 
 ⏰ Horário: 04/11/2025 08:30:15
 
-👤 *Olá, João!*
+👤 *Ola, João!*
 
 📋 Selecione uma opção:
 ...
@@ -410,7 +410,7 @@ Ola Gerente Ana!
 
 Você já está logado e pronto para começar!
 
-👤 *Olá, João!*
+👤 *Ola, João!*
 
 📋 Selecione uma opção:
 

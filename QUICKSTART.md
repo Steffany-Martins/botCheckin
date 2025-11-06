@@ -99,7 +99,7 @@ You should receive:
 
 Você já está logado e pronto para começar!
 
-👤 *Olá, YourName!*
+👤 *Ola, YourName!*
 
 📋 Selecione uma opção:
 
@@ -126,7 +126,7 @@ You should receive:
 
 ⏰ Horário: 04/11/2025 08:30:15
 
-👤 *Olá, YourName!*
+👤 *Ola, YourName!*
 ...
 ```
 

@@ -46,7 +46,7 @@ const MessageTemplates = {
      * Step 1: Boas-vindas e pedir nome
      */
     step1_welcome() {
-      return `👋 *Olá! Bem-vindo ao BotCheckin!*\n\nVejo que você ainda não está cadastrado.\nVamos fazer seu cadastro em *4 passos simples*! 😊\n\n📝 *PASSO 1 de 4*\nPor favor, me diga seu *nome completo*:\n\n💡 _Exemplo: João Silva_\n\n0️⃣ Cancelar cadastro`;
+      return `👋 *Ola! Bem-vindo ao BotCheckin!*\n\nVejo que você ainda não está cadastrado.\nVamos fazer seu cadastro em *4 passos simples*! 😊\n\n📝 *PASSO 1 de 4*\nPor favor, me diga seu *nome completo*:\n\n💡 _Exemplo: João Silva_\n\n0️⃣ Cancelar cadastro`;
     },
 
     /**
@@ -105,7 +105,7 @@ const MessageTemplates = {
      */
     userAlreadyExists(name, role) {
       const roleText = role === 'manager' ? 'Gerente' : role === 'supervisor' ? 'Supervisor' : 'Funcionário';
-      return `👤 *Olá, ${name}!*\n\n✅ Você já está cadastrado como *${roleText}*!\n\n9️⃣ Ver menu principal`;
+      return `👤 *Ola, ${name}!*\n\n✅ Você já está cadastrado como *${roleText}*!\n\n9️⃣ Ver menu principal`;
     },
 
     /**
@@ -149,7 +149,7 @@ const MessageTemplates = {
    * Login success message
    */
   loginSuccess(name) {
-    return `👋 Olá novamente, ${name}!\n\n✅ Login realizado com sucesso!`;
+    return `👋 Ola novamente, ${name}!\n\n✅ Login realizado com sucesso!`;
   },
 
   /**
@@ -232,21 +232,21 @@ const MessageTemplates = {
    * Staff menu
    */
   staffMenu(name) {
-    return `👤 *Olá, ${name}!*\n\n📋 Selecione uma opção:\n\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n5️⃣ Ver Meu Histórico\n\n0️⃣ Sair\n9️⃣ Atualizar menu`;
+    return `👤 *Ola, ${name}!*\n\n📋 Selecione uma opção:\n\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n5️⃣ Ver Meu Histórico\n\n0️⃣ Sair\n9️⃣ Atualizar menu`;
   },
 
   /**
    * Manager menu - Full check-in + management
    */
   managerMenu(name) {
-    return `👔 *Olá, Gerente ${name}!*\n\n📋 Painel de Gestão:\n\n*Check-in Pessoal:*\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n5️⃣ Ver Meu Histórico\n\n*Gestão de Equipe:*\n6️⃣ Ver Todos os Horários\n7️⃣ Buscar Usuário\n8️⃣ Definir Horas Semanais\n9️⃣ Editar Categorias\n🔟 Editar Horários\n\n0️⃣ Sair`;
+    return `👔 *Ola, Gerente ${name}!*\n📋 Painel de Gestão:\n\n*Check-in Pessoal:*\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n5️⃣ Ver Meu Histórico\n\n*Gestão de Equipe:*\n6️⃣ Ver Todos os Horários\n7️⃣ Buscar Usuário\n8️⃣ Definir Horas Semanais\n9️⃣ Editar Categorias\n🔟 Editar Horários\n\n0️⃣ Sair`;
   },
 
   /**
    * Supervisor menu - Full check-in + team management
    */
   supervisorMenu(name) {
-    return `👨‍💼 *Olá, Supervisor ${name}!*\n\n📋 Gestão de Equipe:\n\n*Check-in Pessoal:*\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n\n*Equipe:*\n5️⃣ Ver Equipe Ativa\n6️⃣ Histórico da Equipe\n7️⃣ Editar Horários\n8️⃣ Ver Meu Histórico\n\n0️⃣ Sair\n9️⃣ Atualizar menu`;
+    return `👨‍💼 *Ola, Supervisor ${name}!*\n\n📋 Gestão de Equipe:\n\n*Check-in Pessoal:*\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n\n*Equipe:*\n5️⃣ Ver Equipe Ativa\n6️⃣ Histórico da Equipe\n7️⃣ Editar Horários\n8️⃣ Ver Meu Histórico\n\n0️⃣ Sair\n9️⃣ Atualizar menu`;
   },
 
   /**
@@ -313,6 +313,7 @@ const MessageTemplates = {
     const lines = ['📋 *Resumo Geral de Horários:*\n'];
 
     groups.slice(0, 10).forEach(g => {
+      if (!g.user) return;
       const roleEmoji = g.user.role === 'manager' ? '👔' : g.user.role === 'supervisor' ? '👨‍💼' : '👤';
       lines.push(`\n${roleEmoji} *${g.user.name}* (${g.user.role})`);
 

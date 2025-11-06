@@ -174,7 +174,7 @@ const UserDB = {
           location
         )
       `)
-      .order('timestamp', { foreignTable: 'checkins', ascending: false });
+      .order('timestamp', { referencedTable: 'checkins', ascending: false });
 
     if (error) {
       console.error('Error getting users with checkins:', error);

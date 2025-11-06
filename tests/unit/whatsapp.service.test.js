@@ -29,7 +29,7 @@ describe('WhatsApp Service', () => {
       it('should generate login success message', () => {
         const message = MessageTemplates.loginSuccess('John');
         expect(message).toContain('John');
-        expect(message).toContain('Olá novamente');
+        expect(message).toContain('Ola novamente');
       });
     });
 
