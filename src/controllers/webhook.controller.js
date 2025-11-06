@@ -708,12 +708,16 @@ async function handleRegistrationSteps(req, res, from, body) {
     // Se não precisa de senha (staff), completar registro
     if (!result.needsPassword) {
       // Criar usuário no banco
+      console.log('📝 Attempting to create staff user:', { name: state.name, phone: from, role: state.role, categories: result.categories });
       const user = await UserDB.create(state.name, from, state.role, null, result.categories);
 
       if (!user) {
-        const message = '❌ Erro ao criar usuário. Tente novamente.';
+        console.error('❌ Failed to create staff user - check logs above for details');
+        const message = '❌ Erro ao criar usuário. O número pode já estar cadastrado ou houve um problema de conexão. Tente novamente ou use outro número.';
         return res.type('text/xml').send(twimlMessage(message));
       }
+
+      console.log('✅ Staff user created successfully:', user.id);
 
       // Fazer login automaticamente
       await authService.loginUser(user, from);
@@ -742,12 +746,16 @@ async function handleRegistrationSteps(req, res, from, body) {
     }
 
     // Senha correta, criar usuário
+    console.log('📝 Attempting to create user:', { name: state.name, phone: from, role: state.role, categories: state.categories });
     const user = await UserDB.create(state.name, from, state.role, config.adminPassword, state.categories);
 
     if (!user) {
-      const message = '❌ Erro ao criar usuário. Tente novamente.';
+      console.error('❌ Failed to create user - check logs above for details');
+      const message = '❌ Erro ao criar usuário. O número pode já estar cadastrado ou houve um problema de conexão. Tente novamente ou use outro número.';
       return res.type('text/xml').send(twimlMessage(message));
     }
+
+    console.log('✅ User created successfully:', user.id);
 
     // Fazer login automaticamente
     await authService.loginUser(user, from);

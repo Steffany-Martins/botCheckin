@@ -126,6 +126,8 @@ const UserDB = {
     try {
       const categoriesStr = Array.isArray(categories) ? categories.join(',') : categories;
 
+      console.log('🔍 Creating user with:', { name, phone, role, password: password ? '***' : null, categories: categoriesStr, expectedWeeklyHours });
+
       const result = await pool.query(
         `INSERT INTO users (name, phone, role, password, categories, expected_weekly_hours)
          VALUES ($1, $2, $3, $4, $5, $6)
@@ -133,9 +135,13 @@ const UserDB = {
         [name, phone, role, password, categoriesStr, expectedWeeklyHours]
       );
 
+      console.log('✅ User created successfully:', result.rows[0].id);
       return result.rows[0];
     } catch (error) {
-      console.error('Error creating user:', error);
+      console.error('❌ Error creating user:', error.message);
+      console.error('   Code:', error.code);
+      console.error('   Detail:', error.detail);
+      console.error('   Parameters:', { name, phone, role, password: password ? '***' : null, categories, expectedWeeklyHours });
       return null;
     }
   },
