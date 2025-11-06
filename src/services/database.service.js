@@ -143,10 +143,13 @@ const UserDB = {
       console.log('✅ User created successfully:', result.rows[0].id);
       return result.rows[0];
     } catch (error) {
-      console.error('❌ Error creating user:', error.message);
+      console.error('❌ Error creating user:');
+      console.error('   Message:', error.message);
       console.error('   Code:', error.code);
       console.error('   Detail:', error.detail);
-      console.error('   Parameters:', { name, phone, role, password: password ? '***' : null, categories, expectedWeeklyHours });
+      console.error('   Stack:', error.stack);
+      console.error('   Parameters:', JSON.stringify({ name, phone, role, password: password ? '***' : null, categories, expectedWeeklyHours }));
+      console.error('   Full error:', JSON.stringify(error, null, 2));
       return null;
     }
   },
