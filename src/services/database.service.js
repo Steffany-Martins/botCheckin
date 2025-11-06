@@ -181,7 +181,7 @@ const UserDB = {
       return [];
     }
 
-    return data || [];
+    return data.filter(u => u && u.checkins) || [];
   },
 
   async getTeamMembers(supervisorId) {
