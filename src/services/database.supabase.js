@@ -1,6 +1,6 @@
 /**
  * Supabase Database Service - PostgreSQL
- * Replaces SQLite with cloud-based Supabase PostgreSQL
+ * Cloud-based Supabase client (no direct pg pool)
  */
 
 const { createClient } = require('@supabase/supabase-js');
@@ -12,84 +12,10 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
-// For direct PostgreSQL queries (when needed)
-const { Pool } = require('pg');
-const pool = new Pool({
-  connectionString: process.env.DB_URL,
-  ssl: process.env.NODE_ENV === 'production' ? {
-    rejectUnauthorized: false
-  } : false,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
-});
-
-/**
- * Initialize database tables
- */
-async function initDatabase() {
-  try {
-    const client = await pool.connect();
-
-    // Create tables with PostgreSQL syntax
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
-        phone TEXT UNIQUE NOT NULL,
-        role TEXT NOT NULL,
-        supervisor_id INTEGER,
-        active INTEGER DEFAULT 1,
-        password TEXT,
-        categories TEXT,
-        expected_weekly_hours REAL DEFAULT 40.0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS checkins (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL,
-        type TEXT NOT NULL,
-        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        location TEXT,
-        edited_by INTEGER,
-        edited_at TIMESTAMP,
-        original_timestamp TIMESTAMP,
-        latitude REAL,
-        longitude REAL,
-        location_verified INTEGER DEFAULT 1,
-        distance_meters INTEGER,
-        FOREIGN KEY(user_id) REFERENCES users(id)
-      );
-
-      CREATE TABLE IF NOT EXISTS sessions (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL,
-        phone TEXT NOT NULL,
-        logged_in_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        expires_at TIMESTAMP,
-        FOREIGN KEY(user_id) REFERENCES users(id)
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_checkins_user ON checkins(user_id);
-      CREATE INDEX IF NOT EXISTS idx_sessions_phone ON sessions(phone);
-    `);
-
-    client.release();
-    console.log('✅ Supabase tables initialized successfully');
-  } catch (error) {
-    console.error('❌ Error initializing Supabase tables:', error);
-    throw error;
-  }
-}
-
 /**
  * User database operations
  */
 const UserDB = {
-  /**
-   * Find user by phone number
-   */
   async findByPhone(phone) {
     const { data, error } = await supabase
       .from('users')
@@ -97,7 +23,7 @@ const UserDB = {
       .eq('phone', phone)
       .single();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+    if (error && error.code !== 'PGRST116') {
       console.error('Error finding user by phone:', error);
       return null;
     }
@@ -105,9 +31,6 @@ const UserDB = {
     return data;
   },
 
-  /**
-   * Find user by ID
-   */
   async findById(id) {
     const { data, error } = await supabase
       .from('users')
@@ -123,9 +46,6 @@ const UserDB = {
     return data;
   },
 
-  /**
-   * Create a new user
-   */
   async create(name, phone, role, password = null, categories = null, expectedWeeklyHours = 40.0) {
     const categoriesStr = Array.isArray(categories) ? categories.join(',') : categories;
 
@@ -150,9 +70,6 @@ const UserDB = {
     return data;
   },
 
-  /**
-   * Update user categories
-   */
   async updateCategories(userId, categories) {
     const categoriesStr = Array.isArray(categories) ? categories.join(',') : categories;
 
@@ -170,9 +87,6 @@ const UserDB = {
     return { changes: data ? data.length : 0 };
   },
 
-  /**
-   * Update expected weekly hours
-   */
   async updateExpectedHours(userId, hours) {
     const { data, error } = await supabase
       .from('users')
@@ -188,9 +102,6 @@ const UserDB = {
     return { changes: data ? data.length : 0 };
   },
 
-  /**
-   * Search users by name or phone
-   */
   async search(query, limit = 15) {
     const { data, error } = await supabase
       .from('users')
@@ -206,9 +117,6 @@ const UserDB = {
     return data || [];
   },
 
-  /**
-   * Search users by name only (for managers/supervisors)
-   */
   async searchByName(query, limit = 15) {
     const { data, error } = await supabase
       .from('users')
@@ -224,9 +132,6 @@ const UserDB = {
     return data || [];
   },
 
-  /**
-   * Get all users
-   */
   async all() {
     const { data, error } = await supabase
       .from('users')
@@ -241,9 +146,6 @@ const UserDB = {
     return data || [];
   },
 
-  /**
-   * Get all users with their recent check-ins
-   */
   async getAllWithCheckins() {
     const { data, error } = await supabase
       .from('users')
@@ -270,9 +172,6 @@ const UserDB = {
     return data || [];
   },
 
-  /**
-   * Get team members for supervisor
-   */
   async getTeamMembers(supervisorId) {
     const { data, error } = await supabase
       .from('users')
@@ -288,9 +187,6 @@ const UserDB = {
     return data || [];
   },
 
-  /**
-   * Get team history for supervisor
-   */
   async getTeamHistory(supervisorId, limit = 20) {
     const { data: teamMembers, error: teamError } = await supabase
       .from('users')
@@ -331,17 +227,10 @@ const UserDB = {
  * Checkin database operations
  */
 const CheckinDB = {
-  /**
-   * Create a new checkin
-   */
   async create(userId, type, location = null) {
     const { data, error } = await supabase
       .from('checkins')
-      .insert({
-        user_id: userId,
-        type,
-        location
-      })
+      .insert({ user_id: userId, type, location })
       .select()
       .single();
 
@@ -353,9 +242,6 @@ const CheckinDB = {
     return data ? data.id : null;
   },
 
-  /**
-   * Create a new checkin with GPS data
-   */
   async createWithGPS(userId, type, location = null, latitude = null, longitude = null, locationVerified = 1, distanceMeters = null) {
     const { data, error } = await supabase
       .from('checkins')
@@ -379,9 +265,6 @@ const CheckinDB = {
     return data ? data.id : null;
   },
 
-  /**
-   * Get user's recent checkins
-   */
   async getUserHistory(userId, limit = 10) {
     const { data, error } = await supabase
       .from('checkins')
@@ -397,150 +280,12 @@ const CheckinDB = {
 
     return data || [];
   },
-
-  /**
-   * Update checkin timestamp
-   */
-  async updateTimestamp(checkinId, newTimestamp) {
-    const { data, error } = await supabase
-      .from('checkins')
-      .update({ timestamp: newTimestamp })
-      .eq('id', checkinId)
-      .select();
-
-    if (error) {
-      console.error('Error updating timestamp:', error);
-      return { changes: 0 };
-    }
-
-    return { changes: data ? data.length : 0 };
-  },
-
-  /**
-   * Delete a checkin
-   */
-  async delete(checkinId) {
-    const { data, error } = await supabase
-      .from('checkins')
-      .delete()
-      .eq('id', checkinId)
-      .select();
-
-    if (error) {
-      console.error('Error deleting checkin:', error);
-      return { changes: 0 };
-    }
-
-    return { changes: data ? data.length : 0 };
-  },
-
-  /**
-   * Create manual checkin with custom timestamp
-   */
-  async createManual(userId, type, timestamp, location = null) {
-    const { data, error } = await supabase
-      .from('checkins')
-      .insert({
-        user_id: userId,
-        type,
-        timestamp,
-        location
-      })
-      .select();
-
-    if (error) {
-      console.error('Error creating manual checkin:', error);
-      return { changes: 0 };
-    }
-
-    return { changes: data ? data.length : 0 };
-  },
-
-  /**
-   * Get recent checkins across all users
-   */
-  async getRecent(limit = 20) {
-    const { data, error } = await supabase
-      .from('checkins')
-      .select('id, user_id, type, timestamp, location, latitude, longitude, location_verified, distance_meters')
-      .order('timestamp', { ascending: false })
-      .limit(limit);
-
-    if (error) {
-      console.error('Error getting recent checkins:', error);
-      return [];
-    }
-
-    return data || [];
-  },
-
-  /**
-   * Get recent checkins for a specific user
-   */
-  async getRecentByUser(userId, limit = 10) {
-    const { data, error } = await supabase
-      .from('checkins')
-      .select('id, user_id, type, timestamp, location, latitude, longitude, location_verified, distance_meters, edited_by, edited_at, original_timestamp')
-      .eq('user_id', userId)
-      .order('timestamp', { ascending: false })
-      .limit(limit);
-
-    if (error) {
-      console.error('Error getting user checkins:', error);
-      return [];
-    }
-
-    return data || [];
-  },
-
-  /**
-   * Edit checkin timestamp with audit trail
-   */
-  async editTimestamp(checkinId, newTimestamp, editorUserId) {
-    try {
-      // Get original timestamp if not already saved
-      const { data: checkin, error: fetchError } = await supabase
-        .from('checkins')
-        .select('timestamp, original_timestamp')
-        .eq('id', checkinId)
-        .single();
-
-      if (fetchError || !checkin) {
-        return { success: false, error: 'CHECKIN_NOT_FOUND' };
-      }
-
-      const originalTimestamp = checkin.original_timestamp || checkin.timestamp;
-      const now = new Date().toISOString();
-
-      const { data, error } = await supabase
-        .from('checkins')
-        .update({
-          timestamp: newTimestamp,
-          edited_by: editorUserId,
-          edited_at: now,
-          original_timestamp: originalTimestamp
-        })
-        .eq('id', checkinId)
-        .select();
-
-      if (error) {
-        return { success: false, error: error.message };
-      }
-
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  }
 };
 
 /**
  * Session database operations
  */
 const SessionDB = {
-  /**
-   * Check if user has active session
-   */
   async isActive(phone) {
     const { data, error } = await supabase
       .from('sessions')
@@ -557,25 +302,14 @@ const SessionDB = {
     return !!data;
   },
 
-  /**
-   * Create new session
-   */
   async create(userId, phone) {
     const expiresAt = new Date(Date.now() + config.session.expiryHours * 60 * 60 * 1000).toISOString();
 
-    // Delete existing sessions first
-    await supabase
-      .from('sessions')
-      .delete()
-      .eq('phone', phone);
+    await supabase.from('sessions').delete().eq('phone', phone);
 
     const { data, error } = await supabase
       .from('sessions')
-      .insert({
-        user_id: userId,
-        phone,
-        expires_at: expiresAt
-      })
+      .insert({ user_id: userId, phone, expires_at: expiresAt })
       .select();
 
     if (error) {
@@ -586,9 +320,6 @@ const SessionDB = {
     return { success: true };
   },
 
-  /**
-   * Delete session (logout)
-   */
   async delete(phone) {
     const { data, error } = await supabase
       .from('sessions')
@@ -604,9 +335,6 @@ const SessionDB = {
     return { changes: data ? data.length : 0 };
   },
 
-  /**
-   * Clean up expired sessions
-   */
   async cleanup() {
     const { data, error } = await supabase
       .from('sessions')
@@ -620,7 +348,7 @@ const SessionDB = {
     }
 
     return { changes: data ? data.length : 0 };
-  }
+  },
 };
 
 // Cleanup expired sessions every hour
@@ -630,9 +358,7 @@ setInterval(() => {
 
 module.exports = {
   supabase,
-  pool,
-  initDatabase,
   UserDB,
   CheckinDB,
-  SessionDB
+  SessionDB,
 };
