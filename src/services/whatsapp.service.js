@@ -239,7 +239,7 @@ const MessageTemplates = {
    * Manager menu - Full check-in + management
    */
   managerMenu(name) {
-    return `👔 *Olá, Gerente ${name}!*\n\n📋 Painel de Gestão:\n\n*Check-in Pessoal:*\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n5️⃣ Ver Meu Histórico\n\n*Gestão de Equipe:*\n6️⃣ Ver Todos os Horários\n7️⃣ Buscar Usuário\n8️⃣ Definir Horas Semanais\n9️⃣ Editar Categorias\nA️⃣ Editar Horários\n\n0️⃣ Sair`;
+    return `👔 *Olá, Gerente ${name}!*\n\n📋 Painel de Gestão:\n\n*Check-in Pessoal:*\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n5️⃣ Ver Meu Histórico\n\n*Gestão de Equipe:*\n6️⃣ Ver Todos os Horários\n7️⃣ Buscar Usuário\n8️⃣ Definir Horas Semanais\n9️⃣ Editar Categorias\n🔟 Editar Horários\n\n0️⃣ Sair`;
   },
 
   /**
