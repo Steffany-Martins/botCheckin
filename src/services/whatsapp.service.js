@@ -653,8 +653,16 @@ function getMenuForRole(role, userName) {
   return MessageTemplates.staffMenu(userName);
 }
 
+/**
+ * Get simple navigation footer (without full menu)
+ */
+function getNavigationFooter() {
+  return '\n\n0️⃣ Menu | 9️⃣ Menu Principal';
+}
+
 module.exports = {
   sendWhatsAppMessage,
   MessageTemplates,
-  getMenuForRole
+  getMenuForRole,
+  getNavigationFooter
 };

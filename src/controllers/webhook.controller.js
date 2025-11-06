@@ -4,7 +4,7 @@ const authService = require('../services/auth.service');
 const checkinService = require('../services/checkin.service');
 const registrationService = require('../services/registration.service');
 const conversationService = require('../services/conversation.service');
-const { MessageTemplates, getMenuForRole } = require('../services/whatsapp.service');
+const { MessageTemplates, getMenuForRole, getNavigationFooter } = require('../services/whatsapp.service');
 const config = require('../config/env');
 
 /**
@@ -142,8 +142,7 @@ async function handleCheckinAction(req, res, user, action, tokens) {
     confirmMsg = confirmMsg + gpsInfo;
   }
 
-  const menu = getMenuForRole(user.role, user.name);
-  res.type('text/xml').send(twimlMessage(confirmMsg + '\n\n' + menu));
+  res.type('text/xml').send(twimlMessage(confirmMsg + getNavigationFooter()));
 }
 
 /**
@@ -152,8 +151,7 @@ async function handleCheckinAction(req, res, user, action, tokens) {
 async function handleStat(req, res, user) {
   const records = await checkinService.getUserHistory(user.id);
   const historyMsg = MessageTemplates.userHistory(records);
-  const menu = getMenuForRole(user.role, user.name);
-  res.type('text/xml').send(twimlMessage(historyMsg + '\n\n' + menu));
+  res.type('text/xml').send(twimlMessage(historyMsg + getNavigationFooter()));
 }
 
 /**
@@ -162,8 +160,7 @@ async function handleStat(req, res, user) {
 async function handleAllSchedules(req, res, user) {
   const groups = await checkinService.getAllSchedules();
   const scheduleMsg = MessageTemplates.allSchedules(groups);
-  const menu = getMenuForRole(user.role, user.name);
-  res.type('text/xml').send(twimlMessage(scheduleMsg + '\n\n' + menu));
+  res.type('text/xml').send(twimlMessage(scheduleMsg + getNavigationFooter()));
 }
 
 /**
@@ -174,14 +171,12 @@ async function handleSearch(req, res, user, tokens) {
 
   if (!query) {
     const errorMsg = MessageTemplates.errors.searchFormat();
-    const menu = getMenuForRole(user.role, user.name);
-    return res.type('text/xml').send(twimlMessage(errorMsg + '\n\n' + menu));
+    return res.type('text/xml').send(twimlMessage(errorMsg + getNavigationFooter()));
   }
 
   const users = await checkinService.searchUsers(query);
   const searchMsg = MessageTemplates.searchResults(users);
-  const menu = getMenuForRole(user.role, user.name);
-  res.type('text/xml').send(twimlMessage(searchMsg + '\n\n' + menu));
+  res.type('text/xml').send(twimlMessage(searchMsg + getNavigationFooter()));
 }
 
 /**
@@ -190,8 +185,7 @@ async function handleSearch(req, res, user, tokens) {
 async function handleTeamActive(req, res, user) {
   const members = await checkinService.getTeamStatus(user.id);
   const teamMsg = MessageTemplates.teamActive(members);
-  const menu = getMenuForRole(user.role, user.name);
-  res.type('text/xml').send(twimlMessage(teamMsg + '\n\n' + menu));
+  res.type('text/xml').send(twimlMessage(teamMsg + getNavigationFooter()));
 }
 
 /**
@@ -200,8 +194,7 @@ async function handleTeamActive(req, res, user) {
 async function handleTeamHistory(req, res, user) {
   const records = await checkinService.getTeamHistory(user.id);
   const historyMsg = MessageTemplates.teamHistory(records);
-  const menu = getMenuForRole(user.role, user.name);
-  res.type('text/xml').send(twimlMessage(historyMsg + '\n\n' + menu));
+  res.type('text/xml').send(twimlMessage(historyMsg + getNavigationFooter()));
 }
 
 /**
@@ -213,23 +206,21 @@ async function handleEditTime(req, res, user, tokens) {
 
   if (!checkinId || !newTime) {
     const errorMsg = MessageTemplates.errors.editTimeFormat();
-    const menu = getMenuForRole(user.role, user.name);
-    return res.type('text/xml').send(twimlMessage(errorMsg + '\n\n' + menu));
+    return res.type('text/xml').send(twimlMessage(errorMsg + getNavigationFooter()));
   }
 
   const result = await checkinService.updateCheckinTime(checkinId, newTime);
-  const menu = getMenuForRole(user.role, user.name);
 
   if (result.error === 'INVALID_FORMAT') {
     const errorMsg = MessageTemplates.errors.updateError();
-    return res.type('text/xml').send(twimlMessage(errorMsg + '\n\n' + menu));
+    return res.type('text/xml').send(twimlMessage(errorMsg + getNavigationFooter()));
   }
 
   const message = result.success
     ? MessageTemplates.errors.updateSuccess(checkinId)
     : MessageTemplates.errors.updateFailed();
 
-  res.type('text/xml').send(twimlMessage(message + '\n\n' + menu));
+  res.type('text/xml').send(twimlMessage(message + getNavigationFooter()));
 }
 
 /**
@@ -240,18 +231,16 @@ async function handleDelete(req, res, user, tokens) {
 
   if (!checkinId) {
     const errorMsg = MessageTemplates.errors.deleteFormat();
-    const menu = getMenuForRole(user.role, user.name);
-    return res.type('text/xml').send(twimlMessage(errorMsg + '\n\n' + menu));
+    return res.type('text/xml').send(twimlMessage(errorMsg + getNavigationFooter()));
   }
 
   const result = await checkinService.deleteCheckin(checkinId);
-  const menu = getMenuForRole(user.role, user.name);
 
   const message = result.success
     ? MessageTemplates.errors.deleteSuccess(checkinId)
     : MessageTemplates.errors.deleteFailed();
 
-  res.type('text/xml').send(twimlMessage(message + '\n\n' + menu));
+  res.type('text/xml').send(twimlMessage(message + getNavigationFooter()));
 }
 
 /**
@@ -265,18 +254,16 @@ async function handleAdd(req, res, user, tokens) {
 
   if (!userId || !type || !timestamp) {
     const errorMsg = MessageTemplates.errors.addFormat();
-    const menu = getMenuForRole(user.role, user.name);
-    return res.type('text/xml').send(twimlMessage(errorMsg + '\n\n' + menu));
+    return res.type('text/xml').send(twimlMessage(errorMsg + getNavigationFooter()));
   }
 
   const result = await checkinService.addManualCheckin(userId, type, timestamp, location);
-  const menu = getMenuForRole(user.role, user.name);
 
   const message = result.success
     ? MessageTemplates.errors.addSuccess(userId)
     : MessageTemplates.errors.addError();
 
-  res.type('text/xml').send(twimlMessage(message + '\n\n' + menu));
+  res.type('text/xml').send(twimlMessage(message + getNavigationFooter()));
 }
 
 /**
@@ -386,7 +373,7 @@ async function handleSearchUserConversation(req, res, from, body, user, state) {
       `⏰ *Horas Semanais:* ${hours}h\n` +
       `${selectedUser.active ? '🟢 Ativo' : '🔴 Inativo'}`;
 
-    return res.type('text/xml').send(twimlMessage(message + '\n\n' + menu));
+    return res.type('text/xml').send(twimlMessage(message + getNavigationFooter()));
   }
 
   // Step desconhecido
@@ -450,7 +437,7 @@ async function handleSetHoursConversation(req, res, from, body, user, state) {
       `👤 *Usuário:* ${result.userName}\n` +
       `⏰ *Horas Semanais:* ${result.hours}h`;
 
-    return res.type('text/xml').send(twimlMessage(message + '\n\n' + menu));
+    return res.type('text/xml').send(twimlMessage(message + getNavigationFooter()));
   }
 
   // Step desconhecido
@@ -515,7 +502,7 @@ async function handleEditCategoryConversation(req, res, from, body, user, state)
       `👤 *Usuário:* ${result.userName}\n` +
       `🏪 *Novas Categorias:* ${categoriesText}`;
 
-    return res.type('text/xml').send(twimlMessage(message + '\n\n' + menu));
+    return res.type('text/xml').send(twimlMessage(message + getNavigationFooter()));
   }
 
   // Step desconhecido
@@ -618,7 +605,7 @@ async function handleEditHoursConversation(req, res, from, body, user, state) {
       result.newTimestamp,
       result.editorUser.name
     );
-    return res.type('text/xml').send(twimlMessage(message + '\n\n' + menu));
+    return res.type('text/xml').send(twimlMessage(message + getNavigationFooter()));
   }
 
   // Step desconhecido
