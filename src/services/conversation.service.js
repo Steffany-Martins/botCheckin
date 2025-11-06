@@ -66,7 +66,7 @@ function startSearchUser(phone, userRole) {
 /**
  * Processa busca de usuário - Step 1: Receber nome para buscar
  */
-function processSearchUser_Step1(phone, input) {
+async function processSearchUser_Step1(phone, input) {
   const state = conversationStates.get(phone);
   if (!state) return { error: 'NO_STATE' };
 
@@ -80,7 +80,7 @@ function processSearchUser_Step1(phone, input) {
   }
 
   // Buscar usuários
-  const results = UserDB.searchByName(searchTerm, 10);
+  const results = await UserDB.searchByName(searchTerm, 10);
 
   if (results.length === 0) {
     return {

@@ -344,7 +344,7 @@ async function handleSearchUserConversation(req, res, from, body, user, state) {
 
   if (state.step === 1) {
     // Step 1: Receber nome para busca
-    const result = conversationService.processSearchUser_Step1(from, body);
+    const result = await conversationService.processSearchUser_Step1(from, body);
 
     if (result.error === 'SEARCH_TOO_SHORT') {
       const message = result.message;
@@ -529,7 +529,7 @@ async function handleEditHoursConversation(req, res, from, body, user, state) {
   // Steps 1 and 2: Compartilhados com search user (buscar e selecionar usuário)
   if (state.step === 1) {
     // Step 1: Receber nome para busca
-    const result = conversationService.processSearchUser_Step1(from, body);
+    const result = await conversationService.processSearchUser_Step1(from, body);
 
     if (result.error === 'SEARCH_TOO_SHORT') {
       const message = result.message;

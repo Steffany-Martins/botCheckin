@@ -491,9 +491,8 @@ const MessageTemplates = {
 
     searchUser_results(results, searchTerm) {
       const lines = [`🔍 *Resultados para "${searchTerm}":*\n`];
-
       results.forEach((user, index) => {
-        const roleEmoji = user.role === 'manager' ? '👔' : user.role === 'supervisor' ? '👨‍💼' : '👤';
+        const roleEmoji = user.role === 'manager' ? '💫' : user.role === 'supervisor' ? '🔎' : '👤';
         const categories = user.categories ? ` | ${user.categories}` : '';
         lines.push(`${index + 1}️⃣ ${roleEmoji} *${user.name}*`);
         lines.push(`   📱 ${user.phone}${categories}`);
