@@ -258,15 +258,24 @@ const CheckinDB = {
     try {
       console.log('📍 Creating checkin with GPS:', { userId, type, location, latitude, longitude, locationVerified, distanceMeters });
 
-      const result = await pool.query(
-        `INSERT INTO checkins (user_id, type, location, latitude, longitude, location_verified, distance_meters)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING id`,
-        [userId, type, location, latitude, longitude, locationVerified, distanceMeters]
-      );
+      const { data, error } = await supabase
+        .from('checkins')
+        .insert([{
+          user_id: userId,
+          type,
+          location,
+          latitude,
+          longitude,
+          location_verified: locationVerified,
+          distance_meters: distanceMeters
+        }])
+        .select('id')
+        .single();
 
-      console.log('✅ Checkin with GPS created, ID:', result.rows[0].id);
-      return result.rows[0].id;
+      if (error) throw error;
+
+      console.log('✅ Checkin with GPS created, ID:', data.id);
+      return data.id;
     } catch (error) {
       console.error('❌ Error creating checkin with GPS:', error);
       return null;
@@ -399,11 +408,19 @@ const CheckinDB = {
 const SessionDB = {
   async isActive(phone) {
     try {
-      const result = await pool.query(
-        'SELECT * FROM sessions WHERE phone = $1 AND expires_at > NOW()',
-        [phone]
-      );
-      return result.rows.length > 0;
+      const { data, error } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('phone', phone)
+        .gt('expires_at', new Date().toISOString())
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error checking session:', error);
+        return false;
+      }
+
+      return data !== null;
     } catch (error) {
       console.error('Error checking session:', error);
       return false;
@@ -415,13 +432,21 @@ const SessionDB = {
       const expiresAt = new Date(Date.now() + config.session.expiryHours * 60 * 60 * 1000);
 
       // Delete existing session first
-      await pool.query('DELETE FROM sessions WHERE phone = $1', [phone]);
+      await supabase
+        .from('sessions')
+        .delete()
+        .eq('phone', phone);
 
       // Create new session
-      await pool.query(
-        'INSERT INTO sessions (user_id, phone, expires_at) VALUES ($1, $2, $3)',
-        [userId, phone, expiresAt]
-      );
+      const { error } = await supabase
+        .from('sessions')
+        .insert([{
+          user_id: userId,
+          phone,
+          expires_at: expiresAt.toISOString()
+        }]);
+
+      if (error) throw error;
 
       console.log('✅ Session created for:', phone);
       return { success: true };
@@ -433,12 +458,16 @@ const SessionDB = {
 
   async delete(phone) {
     try {
-      const result = await pool.query(
-        'DELETE FROM sessions WHERE phone = $1',
-        [phone]
-      );
+      const { data, error } = await supabase
+        .from('sessions')
+        .delete()
+        .eq('phone', phone)
+        .select();
+
+      if (error) throw error;
+
       console.log('✅ Session deleted for:', phone);
-      return { changes: result.rowCount || 0 };
+      return { changes: data ? data.length : 0 };
     } catch (error) {
       console.error('❌ Error deleting session:', error);
       return { changes: 0 };
@@ -447,13 +476,19 @@ const SessionDB = {
 
   async cleanup() {
     try {
-      const result = await pool.query(
-        'DELETE FROM sessions WHERE expires_at < NOW()'
-      );
-      if (result.rowCount > 0) {
-        console.log('🧹 Cleaned up', result.rowCount, 'expired sessions');
+      const { data, error } = await supabase
+        .from('sessions')
+        .delete()
+        .lt('expires_at', new Date().toISOString())
+        .select();
+
+      if (error) throw error;
+
+      const rowCount = data ? data.length : 0;
+      if (rowCount > 0) {
+        console.log('🧹 Cleaned up', rowCount, 'expired sessions');
       }
-      return { changes: result.rowCount || 0 };
+      return { changes: rowCount };
     } catch (error) {
       console.error('❌ Error cleaning up sessions:', error);
       return { changes: 0 };
