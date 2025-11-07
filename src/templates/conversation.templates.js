@@ -19,9 +19,11 @@ const ConversationTemplates = {
       if (user.expected_weekly_hours) {
         lines.push(`   ⏰ ${user.expected_weekly_hours}h/semana`);
       }
+      lines.push(''); // Espaço entre usuários
     });
 
-    lines.push(`\n💡 _Digite o número (1-${results.length})_`);
+    lines.push(`💬 *Responda apenas com o número*`);
+    lines.push(`📝 Digite: ${results.length === 1 ? '1' : `1 a ${results.length}`}`);
     lines.push(`\n0️⃣ Voltar | 9️⃣ Menu`);
 
     return lines.join('\n');

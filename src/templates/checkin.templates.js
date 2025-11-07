@@ -105,6 +105,45 @@ const CheckinTemplates = {
   },
 
   /**
+   * Recent history (compact view after check-in actions)
+   */
+  recentHistory(records) {
+    if (records.length === 0) {
+      return '📋 *Histórico Recente:*\n\n_Nenhum registro ainda._';
+    }
+
+    const lines = ['📋 *Histórico Recente:*'];
+
+    records.forEach(r => {
+      const icon = {
+        checkin: '🟢',
+        break: '🟡',
+        return: '🔵',
+        checkout: '🔴'
+      }[r.type] || '•';
+
+      const time = new Date(r.timestamp).toLocaleString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        day: '2-digit',
+        month: '2-digit',
+        timeZone: 'America/Sao_Paulo'
+      });
+
+      const typeText = {
+        checkin: 'Check-in',
+        break: 'Pausa',
+        return: 'Retorno',
+        checkout: 'Check-out'
+      }[r.type] || r.type;
+
+      lines.push(`${icon} ${typeText} - ${time}`);
+    });
+
+    return lines.join('\n');
+  },
+
+  /**
    * Supervisor notification when team member checks in
    */
   supervisorNotification(employeeName, action, timestamp, location = null) {

@@ -142,7 +142,11 @@ async function handleCheckinAction(req, res, user, action, tokens) {
     confirmMsg = confirmMsg + gpsInfo;
   }
 
-  res.type('text/xml').send(twimlMessage(confirmMsg + getNavigationFooter()));
+  // Buscar histórico recente atualizado (últimos 5 registros)
+  const historyResult = await checkinService.getUserHistory(user.id, 5);
+  const recentHistory = MessageTemplates.recentHistory(historyResult.records);
+
+  res.type('text/xml').send(twimlMessage(confirmMsg + '\n\n' + recentHistory + getNavigationFooter()));
 }
 
 /**
@@ -288,12 +292,16 @@ async function handleMenu(req, res, user) {
  */
 async function handleConversationSteps(req, res, from, body, user) {
   const state = conversationService.getConversationState(from);
+  console.log(`[CONVERSATION] From: ${from}, Body: "${body}", State:`, state);
 
   if (!state) {
     // Estado não encontrado, enviar menu
+    console.log(`[CONVERSATION] No active state found`);
     const menu = getMenuForRole(user.role, user.name);
     return res.type('text/xml').send(twimlMessage(menu));
   }
+
+  console.log(`[CONVERSATION] Type: ${state.type}, Step: ${state.step}`);
 
   // Permitir cancelamento em qualquer step
   if (body.toUpperCase() === 'CANCELAR') {
@@ -386,10 +394,12 @@ async function handleSearchUserConversation(req, res, from, body, user, state) {
  */
 async function handleSetHoursConversation(req, res, from, body, user, state) {
   const menu = getMenuForRole(user.role, user.name);
+  console.log(`[SET_HOURS] Step ${state.step}, From: ${from}, Body: "${body}"`);
 
   if (state.step === 1) {
     // Step 1: Receber nome para busca
     const result = await conversationService.processSetHours_Step1(from, body);
+    console.log(`[SET_HOURS] Step 1 result:`, result);
 
     if (result.error === 'SEARCH_TOO_SHORT') {
       const message = result.message;
@@ -409,6 +419,7 @@ async function handleSetHoursConversation(req, res, from, body, user, state) {
   if (state.step === 2) {
     // Step 2: Selecionar usuário da lista
     const result = await conversationService.processSetHours_Step2(from, body);
+    console.log(`[SET_HOURS] Step 2 result:`, result);
 
     if (result.error) {
       const message = result.message;
@@ -417,6 +428,7 @@ async function handleSetHoursConversation(req, res, from, body, user, state) {
 
     // Usuário selecionado - pedir horas
     const message = MessageTemplates.conversation.setHours_askHours(result.user.name);
+    console.log(`[SET_HOURS] Step 2 - asking for hours for user: ${result.user.name}`);
     return res.type('text/xml').send(twimlMessage(message));
   }
 
@@ -450,10 +462,12 @@ async function handleSetHoursConversation(req, res, from, body, user, state) {
  */
 async function handleEditCategoryConversation(req, res, from, body, user, state) {
   const menu = getMenuForRole(user.role, user.name);
+  console.log(`[EDIT_CATEGORY] Step ${state.step}, From: ${from}, Body: "${body}"`);
 
   if (state.step === 1) {
     // Step 1: Receber nome para busca
     const result = await conversationService.processEditCategory_Step1(from, body);
+    console.log(`[EDIT_CATEGORY] Step 1 result:`, result);
 
     if (result.error === 'SEARCH_TOO_SHORT') {
       const message = result.message;
@@ -473,6 +487,7 @@ async function handleEditCategoryConversation(req, res, from, body, user, state)
   if (state.step === 2) {
     // Step 2: Selecionar usuário da lista
     const result = await conversationService.processEditCategory_Step2(from, body);
+    console.log(`[EDIT_CATEGORY] Step 2 result:`, result);
 
     if (result.error) {
       const message = result.message;
@@ -482,6 +497,7 @@ async function handleEditCategoryConversation(req, res, from, body, user, state)
     // Usuário selecionado - pedir categorias
     const currentCategories = result.user.categories ? result.user.categories.split(',') : [];
     const message = MessageTemplates.conversation.editCategory_askCategories(result.user.name, currentCategories);
+    console.log(`[EDIT_CATEGORY] Step 2 - asking for categories for user: ${result.user.name}`);
     return res.type('text/xml').send(twimlMessage(message));
   }
 
