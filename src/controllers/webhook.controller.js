@@ -16,7 +16,8 @@ const COMMAND_MAP = {
     '2': 'BREAK',
     '3': 'RETURN',
     '4': 'CHECKOUT',
-    '5': 'STAT',
+    '5': 'TODAY_HISTORY',
+    '6': 'STAT',
     '9': 'MENU',
     '0': 'LOGOUT'
   },
@@ -25,12 +26,13 @@ const COMMAND_MAP = {
     '2': 'BREAK',
     '3': 'RETURN',
     '4': 'CHECKOUT',
-    '5': 'STAT',
-    '6': 'ALL_SCHEDULES',
-    '7': 'SEARCH_USER',
-    '8': 'SET_HOURS',
-    '9': 'EDIT_CATEGORY',
+    '5': 'TODAY_HISTORY',
+    '6': 'STAT',
+    '7': 'ALL_SCHEDULES',
+    '8': 'SEARCH_USER',
+    '9': 'SET_HOURS',
     '10': 'EDIT_HOURS',
+    '11': 'EDIT_CATEGORY',
     '0': 'LOGOUT'
   },
   supervisor: {
@@ -41,8 +43,8 @@ const COMMAND_MAP = {
     '5': 'TEAM_ACTIVE',
     '6': 'TEAM_HISTORY',
     '7': 'EDIT_HOURS',
-    '8': 'STAT',
-    '9': 'MENU',
+    '8': 'TODAY_HISTORY',
+    '9': 'STAT',
     '0': 'LOGOUT'
   }
 };
@@ -150,11 +152,20 @@ async function handleCheckinAction(req, res, user, action, tokens) {
 }
 
 /**
- * Handle stat/history request
+ * Handle stat/history request (all history)
  */
 async function handleStat(req, res, user) {
   const result = await checkinService.getUserHistory(user.id);
   const historyMsg = MessageTemplates.userHistory(result.records, result.hasMore);
+  res.type('text/xml').send(twimlMessage(historyMsg + getNavigationFooter()));
+}
+
+/**
+ * Handle today's history request
+ */
+async function handleTodayHistory(req, res, user) {
+  const result = await checkinService.getTodayHistory(user.id);
+  const historyMsg = MessageTemplates.todayHistory(result.records);
   res.type('text/xml').send(twimlMessage(historyMsg + getNavigationFooter()));
 }
 
@@ -874,6 +885,10 @@ async function webhookHandler(req, res) {
 
   if (userAction === 'STAT' || userAction === 'MY_CHECKIN') {
     return handleStat(req, res, user);
+  }
+
+  if (userAction === 'TODAY_HISTORY') {
+    return handleTodayHistory(req, res, user);
   }
 
   if (userAction === 'ALL_SCHEDULES' || userAction === 'STATUS') {

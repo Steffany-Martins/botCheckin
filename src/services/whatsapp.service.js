@@ -232,21 +232,21 @@ const MessageTemplates = {
    * Staff menu
    */
   staffMenu(name) {
-    return `👤 *Ola, ${name}!*\n\n📋 Selecione uma opção:\n\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n5️⃣ Ver Meu Histórico\n\n0️⃣ Sair\n9️⃣ Atualizar menu`;
+    return `👤 *Ola, ${name}!*\n\n📋 Selecione uma opção:\n\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n5️⃣ Histórico de Hoje\n6️⃣ Ver Todo Histórico\n\n0️⃣ Sair\n9️⃣ Atualizar menu`;
   },
 
   /**
    * Manager menu - Full check-in + management
    */
   managerMenu(name) {
-    return `👔 *Ola, Gerente ${name}!*\n📋 Painel de Gestão:\n\n*Check-in Pessoal:*\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n5️⃣ Ver Meu Histórico\n\n*Gestão de Equipe:*\n6️⃣ Ver Todos os Horários\n7️⃣ Buscar Usuário\n8️⃣ Definir Horas Semanais\n9️⃣ Editar Categorias\n🔟 Editar Horários\n\n0️⃣ Sair`;
+    return `👔 *Ola, Gerente ${name}!*\n📋 Painel de Gestão:\n\n*Check-in Pessoal:*\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n5️⃣ Histórico de Hoje\n6️⃣ Ver Todo Histórico\n\n*Gestão de Equipe:*\n7️⃣ Ver Todos os Horários\n8️⃣ Buscar Usuário\n9️⃣ Definir Horas Semanais\n🔟 Editar Horários\n1️⃣1️⃣ Editar Categorias\n\n0️⃣ Sair`;
   },
 
   /**
    * Supervisor menu - Full check-in + team management
    */
   supervisorMenu(name) {
-    return `👨‍💼 *Ola, Supervisor ${name}!*\n\n📋 Gestão de Equipe:\n\n*Check-in Pessoal:*\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n\n*Equipe:*\n5️⃣ Ver Equipe Ativa\n6️⃣ Histórico da Equipe\n7️⃣ Editar Horários\n8️⃣ Ver Meu Histórico\n\n0️⃣ Sair\n9️⃣ Atualizar menu`;
+    return `👨‍💼 *Ola, Supervisor ${name}!*\n\n📋 Gestão de Equipe:\n\n*Check-in Pessoal:*\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n\n*Equipe:*\n5️⃣ Ver Equipe Ativa\n6️⃣ Histórico da Equipe\n7️⃣ Editar Horários\n\n*Meu Histórico:*\n8️⃣ Histórico de Hoje\n9️⃣ Ver Todo Histórico\n\n0️⃣ Sair`;
   },
 
   /**
@@ -309,6 +309,55 @@ const MessageTemplates = {
       lines.push('');
       lines.push('📄 _Há mais registros disponíveis no banco de dados_');
     }
+
+    return lines.join('\n');
+  },
+
+  /**
+   * Today's history display
+   */
+  todayHistory(records) {
+    if (records.length === 0) {
+      const now = new Date().toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        timeZone: 'America/Sao_Paulo'
+      });
+      return `📅 *Histórico de Hoje* (${now})\n\n_Nenhum registro encontrado para hoje._\n\n💡 _Dica: Use a opção "Ver Todo Histórico" para ver registros anteriores_`;
+    }
+
+    const lines = [];
+    const now = new Date().toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      timeZone: 'America/Sao_Paulo'
+    });
+
+    lines.push(`📅 *Histórico de Hoje* (${now})`);
+    lines.push(`\n📊 *${records.length} registro${records.length > 1 ? 's' : ''}:*\n`);
+
+    // Mostrar todos os registros de hoje
+    records.forEach(r => {
+      const icon = {
+        checkin: '🟢',
+        break: '🟡',
+        return: '🔵',
+        checkout: '🔴'
+      }[r.type] || '•';
+
+      const time = new Date(r.timestamp).toLocaleString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'America/Sao_Paulo'
+      });
+
+      const location = r.location ? ` 📍 ${r.location}` : '';
+      lines.push(`${icon} ${r.type} - ${time}${location}`);
+    });
+
+    lines.push('\n💡 _Dica: Use "Ver Todo Histórico" para ver registros anteriores_');
 
     return lines.join('\n');
   },
