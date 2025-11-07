@@ -149,8 +149,8 @@ async function handleCheckinAction(req, res, user, action, tokens) {
  * Handle stat/history request
  */
 async function handleStat(req, res, user) {
-  const records = await checkinService.getUserHistory(user.id);
-  const historyMsg = MessageTemplates.userHistory(records);
+  const result = await checkinService.getUserHistory(user.id);
+  const historyMsg = MessageTemplates.userHistory(result.records, result.hasMore);
   res.type('text/xml').send(twimlMessage(historyMsg + getNavigationFooter()));
 }
 
@@ -389,7 +389,7 @@ async function handleSetHoursConversation(req, res, from, body, user, state) {
 
   if (state.step === 1) {
     // Step 1: Receber nome para busca
-    const result = conversationService.processSetHours_Step1(from, body);
+    const result = await conversationService.processSetHours_Step1(from, body);
 
     if (result.error === 'SEARCH_TOO_SHORT') {
       const message = result.message;
@@ -408,7 +408,7 @@ async function handleSetHoursConversation(req, res, from, body, user, state) {
 
   if (state.step === 2) {
     // Step 2: Selecionar usuário da lista
-    const result = conversationService.processSetHours_Step2(from, body);
+    const result = await conversationService.processSetHours_Step2(from, body);
 
     if (result.error) {
       const message = result.message;
@@ -431,10 +431,10 @@ async function handleSetHoursConversation(req, res, from, body, user, state) {
 
     // Atualizar no banco de dados
     const { UserDB } = require('../services/database.service');
-    UserDB.updateExpectedHours(result.userId, result.hours);
+    await UserDB.updateExpectedHours(result.user.id, result.hours);
 
     const message = `✅ *Horas Definidas com Sucesso!*\n\n` +
-      `👤 *Usuário:* ${result.userName}\n` +
+      `👤 *Usuário:* ${result.user.name}\n` +
       `⏰ *Horas Semanais:* ${result.hours}h`;
 
     return res.type('text/xml').send(twimlMessage(message + getNavigationFooter()));
@@ -453,7 +453,7 @@ async function handleEditCategoryConversation(req, res, from, body, user, state)
 
   if (state.step === 1) {
     // Step 1: Receber nome para busca
-    const result = conversationService.processEditCategory_Step1(from, body);
+    const result = await conversationService.processEditCategory_Step1(from, body);
 
     if (result.error === 'SEARCH_TOO_SHORT') {
       const message = result.message;
@@ -472,7 +472,7 @@ async function handleEditCategoryConversation(req, res, from, body, user, state)
 
   if (state.step === 2) {
     // Step 2: Selecionar usuário da lista
-    const result = conversationService.processEditCategory_Step2(from, body);
+    const result = await conversationService.processEditCategory_Step2(from, body);
 
     if (result.error) {
       const message = result.message;
@@ -496,11 +496,11 @@ async function handleEditCategoryConversation(req, res, from, body, user, state)
 
     // Atualizar no banco de dados
     const { UserDB } = require('../services/database.service');
-    UserDB.updateCategories(result.userId, result.categories);
+    await UserDB.updateCategories(result.user.id, result.categories);
 
     const categoriesText = result.categories.join(', ');
     const message = `✅ *Categorias Atualizadas!*\n\n` +
-      `👤 *Usuário:* ${result.userName}\n` +
+      `👤 *Usuário:* ${result.user.name}\n` +
       `🏪 *Novas Categorias:* ${categoriesText}`;
 
     return res.type('text/xml').send(twimlMessage(message + getNavigationFooter()));

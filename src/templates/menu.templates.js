@@ -8,21 +8,62 @@ const MenuTemplates = {
    * Staff menu - Basic check-in/out options
    */
   staff(name) {
-    return `👤 *Ola, ${name}!*\n\n📋 Selecione uma opção:\n\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n5️⃣ Ver Meu Histórico\n\n0️⃣ Sair\n9️⃣ Atualizar menu`;
+    return (
+      `👤 *Ola,* ${name}!\n\n` +
+      `📋 *Selecione uma opção:*\n\n` +
+      `1️⃣ Check-in\n` +
+      `2️⃣ Iniciar Pausa\n` +
+      `3️⃣ Voltar da Pausa\n` +
+      `4️⃣ Fechar Expediente\n` +
+      `5️⃣ Ver Meu Histórico\n\n` +
+      `0️⃣ Sair\n` +
+      `9️⃣ Atualizar menu`
+    );
   },
 
   /**
    * Manager menu - Full check-in + management
    */
   manager(name) {
-    return `👔 *Ola, Gerente ${name}!*\n📋 Painel de Gestão:\n\n*Check-in Pessoal:*\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n5️⃣ Ver Meu Histórico\n\n*Gestão de Equipe:*\n6️⃣ Ver Todos os Horários\n7️⃣ Buscar Usuário\n8️⃣ Definir Horas Semanais\n9️⃣ Editar Categorias\n🔟 Editar Horários\n\n0️⃣ Sair`;
+    return (
+      `👔 *Ola, Gerente* ${name}!\n\n` +
+      `📋 *Painel de Gestão:*\n\n` +
+      `*Check-in Pessoal:*\n` +
+      `1️⃣ Check-in\n` +
+      `2️⃣ Iniciar Pausa\n` +
+      `3️⃣ Voltar da Pausa\n` +
+      `4️⃣ Fechar Expediente\n` +
+      `5️⃣ Ver Meu Histórico\n\n` +
+      `*Gestão de Equipe:*\n` +
+      `6️⃣ Ver Todos os Horários\n` +
+      `7️⃣ Buscar Usuário\n` +
+      `8️⃣ Definir Horas Semanais\n` +
+      `9️⃣ Editar Categorias\n` +
+      `🔟 Editar Horários\n\n` +
+      `0️⃣ Sair`
+    );
   },
 
   /**
    * Supervisor menu - Full check-in + team management
    */
   supervisor(name) {
-    return `👨‍💼 *Ola, Supervisor ${name}!*\n\n📋 Gestão de Equipe:\n\n*Check-in Pessoal:*\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n\n*Equipe:*\n5️⃣ Ver Equipe Ativa\n6️⃣ Histórico da Equipe\n7️⃣ Editar Horários\n8️⃣ Ver Meu Histórico\n\n0️⃣ Sair\n9️⃣ Atualizar menu`;
+    return (
+      `👨‍💼 *Ola, Supervisor* ${name}!\n\n` +
+      `📋 *Gestão de Equipe:*\n\n` +
+      `*Check-in Pessoal:*\n` +
+      `1️⃣ Check-in\n` +
+      `2️⃣ Iniciar Pausa\n` +
+      `3️⃣ Voltar da Pausa\n` +
+      `4️⃣ Fechar Expediente\n\n` +
+      `*Equipe:*\n` +
+      `5️⃣ Ver Equipe Ativa\n` +
+      `6️⃣ Histórico da Equipe\n` +
+      `7️⃣ Editar Horários\n` +
+      `8️⃣ Ver Meu Histórico\n\n` +
+      `0️⃣ Sair\n` +
+      `9️⃣ Atualizar menu`
+    );
   },
 
   /**
@@ -79,7 +120,7 @@ function getMenuForRole(role, userName) {
  * Get simple navigation footer (without full menu)
  */
 function getNavigationFooter() {
-  return '\n\n0️⃣ Menu | 9️⃣ Menu Principal';
+  return '\n\n0️⃣ Voltar | 9️⃣ Menu';
 }
 
 module.exports = {

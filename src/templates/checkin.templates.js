@@ -41,15 +41,40 @@ const CheckinTemplates = {
   },
 
   /**
-   * User history display
+   * User history display with pagination indicator
    */
-  userHistory(records) {
+  userHistory(records, hasMore = false) {
     if (records.length === 0) {
       return '📊 *Seu Histórico*\n\n_Nenhum registro encontrado._';
     }
 
-    const lines = ['📊 *Seu Histórico Recente:*\n'];
+    const lines = [];
 
+    // Mostrar check-in mais recente no topo
+    const mostRecent = records[0];
+    const recentIcon = {
+      checkin: '🟢',
+      break: '🟡',
+      return: '🔵',
+      checkout: '🔴'
+    }[mostRecent.type] || '•';
+
+    const recentTime = new Date(mostRecent.timestamp).toLocaleString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      timeZone: 'America/Sao_Paulo'
+    });
+
+    const recentLocation = mostRecent.location ? ` 📍 ${mostRecent.location}` : '';
+
+    lines.push(`📍 *MAIS RECENTE:*`);
+    lines.push(`${recentIcon} ${mostRecent.type} - ${recentTime}${recentLocation}`);
+    lines.push('');
+    lines.push(`📊 *HISTÓRICO (${records.length} registros):*\n`);
+
+    // Mostrar todos os registros
     records.forEach(r => {
       const icon = {
         checkin: '🟢',
@@ -69,6 +94,12 @@ const CheckinTemplates = {
       const location = r.location ? ` 📍 ${r.location}` : '';
       lines.push(`${icon} ${r.type} - ${time}${location}`);
     });
+
+    // Indicar se há mais registros
+    if (hasMore) {
+      lines.push('');
+      lines.push('📄 _Há mais registros disponíveis no banco de dados_');
+    }
 
     return lines.join('\n');
   },

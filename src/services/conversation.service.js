@@ -138,7 +138,69 @@ function startSetHours(phone) {
 }
 
 /**
- * Processa definição de horas - Steps compartilham busca com searchUser
+ * Processa definição de horas - Step 1: Buscar usuário
+ */
+async function processSetHours_Step1(phone, input) {
+  const state = conversationStates.get(phone);
+  if (!state) return { error: 'NO_STATE' };
+
+  const searchTerm = input.trim();
+
+  if (searchTerm.length < 2) {
+    return {
+      error: 'SEARCH_TOO_SHORT',
+      message: 'Digite pelo menos 2 caracteres para buscar.'
+    };
+  }
+
+  // Buscar usuários
+  const results = await UserDB.searchByName(searchTerm, 10);
+
+  if (results.length === 0) {
+    return {
+      error: 'NO_RESULTS',
+      message: `Nenhum usuário encontrado com "${searchTerm}".`,
+      searchTerm
+    };
+  }
+
+  // Salvar resultados e avançar para step 2
+  state.searchResults = results;
+  state.searchTerm = searchTerm;
+  state.step = 2;
+  conversationStates.set(phone, state);
+
+  return { success: true, results, searchTerm };
+}
+
+/**
+ * Processa definição de horas - Step 2: Selecionar usuário
+ */
+function processSetHours_Step2(phone, input) {
+  const state = conversationStates.get(phone);
+  if (!state) return { error: 'NO_STATE' };
+
+  const selection = parseInt(input.trim());
+
+  if (isNaN(selection) || selection < 1 || selection > state.searchResults.length) {
+    return {
+      error: 'INVALID_SELECTION',
+      message: `Digite um número de 1 a ${state.searchResults.length}`
+    };
+  }
+
+  const selectedUser = state.searchResults[selection - 1];
+
+  // Salvar usuário selecionado e avançar para step 3
+  state.selectedUser = selectedUser;
+  state.step = 3;
+  conversationStates.set(phone, state);
+
+  return { success: true, user: selectedUser };
+}
+
+/**
+ * Processa definição de horas - Step 3: Definir horas
  */
 function processSetHours_Step3(phone, input) {
   const state = conversationStates.get(phone);
@@ -173,6 +235,68 @@ function startEditCategory(phone) {
     startedAt: Date.now()
   });
   return { success: true };
+}
+
+/**
+ * Processa edição de categorias - Step 1: Buscar usuário
+ */
+async function processEditCategory_Step1(phone, input) {
+  const state = conversationStates.get(phone);
+  if (!state) return { error: 'NO_STATE' };
+
+  const searchTerm = input.trim();
+
+  if (searchTerm.length < 2) {
+    return {
+      error: 'SEARCH_TOO_SHORT',
+      message: 'Digite pelo menos 2 caracteres para buscar.'
+    };
+  }
+
+  // Buscar usuários
+  const results = await UserDB.searchByName(searchTerm, 10);
+
+  if (results.length === 0) {
+    return {
+      error: 'NO_RESULTS',
+      message: `Nenhum usuário encontrado com "${searchTerm}".`,
+      searchTerm
+    };
+  }
+
+  // Salvar resultados e avançar para step 2
+  state.searchResults = results;
+  state.searchTerm = searchTerm;
+  state.step = 2;
+  conversationStates.set(phone, state);
+
+  return { success: true, results, searchTerm };
+}
+
+/**
+ * Processa edição de categorias - Step 2: Selecionar usuário
+ */
+function processEditCategory_Step2(phone, input) {
+  const state = conversationStates.get(phone);
+  if (!state) return { error: 'NO_STATE' };
+
+  const selection = parseInt(input.trim());
+
+  if (isNaN(selection) || selection < 1 || selection > state.searchResults.length) {
+    return {
+      error: 'INVALID_SELECTION',
+      message: `Digite um número de 1 a ${state.searchResults.length}`
+    };
+  }
+
+  const selectedUser = state.searchResults[selection - 1];
+
+  // Salvar usuário selecionado e avançar para step 3
+  state.selectedUser = selectedUser;
+  state.step = 3;
+  conversationStates.set(phone, state);
+
+  return { success: true, user: selectedUser };
 }
 
 /**
@@ -366,8 +490,12 @@ module.exports = {
   processSearchUser_Step1,
   processSearchUser_Step2,
   startSetHours,
+  processSetHours_Step1,
+  processSetHours_Step2,
   processSetHours_Step3,
   startEditCategory,
+  processEditCategory_Step1,
+  processEditCategory_Step2,
   processEditCategory_Step3,
   startEditHours,
   processEditHours_Step3,

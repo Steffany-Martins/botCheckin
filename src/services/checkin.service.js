@@ -62,8 +62,17 @@ async function recordCheckin(user, type, location = null, latitude = null, longi
 /**
  * Get user's checkin history
  */
-async function getUserHistory(userId, limit = 10) {
-  return await CheckinDB.getUserHistory(userId, limit);
+async function getUserHistory(userId, limit = 50) {
+  // Buscar 1 registro a mais para saber se há próxima página
+  const records = await CheckinDB.getUserHistory(userId, limit + 1);
+
+  const hasMore = records.length > limit;
+  const displayRecords = hasMore ? records.slice(0, limit) : records;
+
+  return {
+    records: displayRecords,
+    hasMore: hasMore
+  };
 }
 
 /**
