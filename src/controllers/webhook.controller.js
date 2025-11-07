@@ -18,6 +18,7 @@ const COMMAND_MAP = {
     '4': 'CHECKOUT',
     '5': 'TODAY_HISTORY',
     '6': 'STAT',
+    '7': 'EXPORT_PDF',
     '9': 'MENU',
     '0': 'LOGOUT'
   },
@@ -28,11 +29,12 @@ const COMMAND_MAP = {
     '4': 'CHECKOUT',
     '5': 'TODAY_HISTORY',
     '6': 'STAT',
-    '7': 'ALL_SCHEDULES',
-    '8': 'SEARCH_USER',
-    '9': 'SET_HOURS',
-    '10': 'EDIT_HOURS',
-    '11': 'EDIT_CATEGORY',
+    '7': 'EXPORT_PDF',
+    '8': 'ALL_SCHEDULES',
+    '9': 'SEARCH_USER',
+    '10': 'SET_HOURS',
+    '11': 'EDIT_HOURS',
+    '12': 'EDIT_CATEGORY',
     '0': 'LOGOUT'
   },
   supervisor: {
@@ -45,6 +47,7 @@ const COMMAND_MAP = {
     '7': 'EDIT_HOURS',
     '8': 'TODAY_HISTORY',
     '9': 'STAT',
+    '10': 'EXPORT_PDF',
     '0': 'LOGOUT'
   }
 };
@@ -125,16 +128,28 @@ async function handleLogin(req, res, user, from, tokens) {
  */
 async function handleCheckinAction(req, res, user, action, tokens) {
   const location = tokens.slice(1).join(' ') || null;
+  const checkinType = action.toLowerCase();
+  const from = normalizePhone(req.body.From);
 
   // Extract GPS coordinates from Twilio request (optional)
   const latitude = req.body.Latitude ? parseFloat(req.body.Latitude) : null;
   const longitude = req.body.Longitude ? parseFloat(req.body.Longitude) : null;
 
-  // Record check-in with optional GPS verification
-  const result = await checkinService.recordCheckin(user, action.toLowerCase(), location, latitude, longitude);
+  // Check if user already has a check-in of this type today
+  const { CheckinDB } = require('../services/database.service');
+  const existingCheckin = await CheckinDB.getTodayCheckinByType(user.id, checkinType);
+
+  if (existingCheckin) {
+    // User already has this type of check-in today, ask if they want to replace it
+    const result = conversationService.startReplaceCheckin(from, existingCheckin, checkinType, location);
+    return res.type('text/xml').send(twimlMessage(result.message));
+  }
+
+  // No duplicate, proceed with normal check-in
+  const result = await checkinService.recordCheckin(user, checkinType, location, latitude, longitude);
 
   // Build confirmation message with GPS info if available
-  let confirmMsg = MessageTemplates.checkinConfirmation(action.toLowerCase(), location, user.name);
+  let confirmMsg = MessageTemplates.checkinConfirmation(checkinType, location, user.name);
 
   if (latitude && longitude) {
     const gpsInfo = result.locationVerified
@@ -167,6 +182,56 @@ async function handleTodayHistory(req, res, user) {
   const result = await checkinService.getTodayHistory(user.id);
   const historyMsg = MessageTemplates.todayHistory(result.records);
   res.type('text/xml').send(twimlMessage(historyMsg + getNavigationFooter()));
+}
+
+/**
+ * Handle export history to PDF request
+ */
+async function handleExportPDF(req, res, user) {
+  try {
+    const result = await checkinService.exportHistoryPDF(user.id);
+
+    if (!result.success) {
+      let errorMsg = '';
+      if (result.error === 'NO_RECORDS') {
+        errorMsg = '📄 *Exportar PDF*\n\n❌ Você não tem registros para exportar.';
+      } else {
+        errorMsg = '📄 *Exportar PDF*\n\n❌ Erro ao gerar PDF. Tente novamente mais tarde.';
+      }
+      return res.type('text/xml').send(twimlMessage(errorMsg + getNavigationFooter()));
+    }
+
+    // Get the PDF filename
+    const path = require('path');
+    const filename = path.basename(result.filepath);
+
+    // Build public URL for the PDF
+    const baseUrl = process.env.BASE_URL || `https://${req.get('host')}`;
+    const pdfUrl = `${baseUrl}/pdf/${filename}`;
+
+    // Send message with PDF link using TwiML Media
+    const message = `📄 *Histórico Exportado*\n\n✅ Seu histórico foi gerado com sucesso!\n\n📊 Total: ${result.recordCount} registros\n\n🔗 Clique no link abaixo para baixar o PDF:`;
+
+    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Message>
+    <Body>${message}</Body>
+    <Media>${pdfUrl}</Media>
+  </Message>
+</Response>`;
+
+    // Schedule PDF deletion after 5 minutes
+    const pdfService = require('../services/pdf.service');
+    setTimeout(() => {
+      pdfService.deletePDF(result.filepath);
+    }, 5 * 60 * 1000);
+
+    res.type('text/xml').send(twiml);
+  } catch (error) {
+    console.error('❌ Error handling PDF export:', error);
+    const errorMsg = '📄 *Exportar PDF*\n\n❌ Erro inesperado. Tente novamente mais tarde.';
+    res.type('text/xml').send(twimlMessage(errorMsg + getNavigationFooter()));
+  }
 }
 
 /**
@@ -337,6 +402,10 @@ async function handleConversationSteps(req, res, from, body, user) {
 
   if (state.type === 'edit_hours') {
     return handleEditHoursConversation(req, res, from, body, user, state);
+  }
+
+  if (state.type === 'replace_checkin') {
+    return handleReplaceCheckinConversation(req, res, from, body, user, state);
   }
 
   // Tipo desconhecido, cancelar
@@ -642,6 +711,50 @@ async function handleEditHoursConversation(req, res, from, body, user, state) {
 }
 
 /**
+ * Handle replace checkin conversation
+ */
+async function handleReplaceCheckinConversation(req, res, from, body, user, state) {
+  const { CheckinDB } = require('../services/database.service');
+  const result = conversationService.processReplaceCheckin_Step1(from, body);
+
+  if (result.error === 'INVALID_CHOICE') {
+    return res.type('text/xml').send(twimlMessage(result.message));
+  }
+
+  if (result.replace === false) {
+    // User chose to keep existing check-in
+    return res.type('text/xml').send(twimlMessage(result.message + getNavigationFooter()));
+  }
+
+  // User chose to replace - delete old and create new
+  if (result.replace === true) {
+    try {
+      // Delete the existing check-in
+      await CheckinDB.delete(result.existingCheckinId);
+
+      // Create new check-in with current timestamp
+      const checkinResult = await checkinService.recordCheckin(
+        user,
+        result.newType,
+        result.location
+      );
+
+      // Build confirmation message
+      const confirmMsg = MessageTemplates.checkinConfirmation(result.newType, result.location, user.name);
+
+      // Get updated history
+      const historyResult = await checkinService.getUserHistory(user.id, 5);
+      const recentHistory = MessageTemplates.recentHistory(historyResult.records);
+
+      return res.type('text/xml').send(twimlMessage(`✅ *Registro substituído!*\n\n${confirmMsg}\n\n${recentHistory}` + getNavigationFooter()));
+    } catch (error) {
+      console.error('Error replacing check-in:', error);
+      return res.type('text/xml').send(twimlMessage('❌ Erro ao substituir registro. Tente novamente.' + getNavigationFooter()));
+    }
+  }
+}
+
+/**
  * Handle registration steps process
  */
 async function handleRegistrationSteps(req, res, from, body) {
@@ -889,6 +1002,10 @@ async function webhookHandler(req, res) {
 
   if (userAction === 'TODAY_HISTORY') {
     return handleTodayHistory(req, res, user);
+  }
+
+  if (userAction === 'EXPORT_PDF') {
+    return handleExportPDF(req, res, user);
   }
 
   if (userAction === 'ALL_SCHEDULES' || userAction === 'STATUS') {

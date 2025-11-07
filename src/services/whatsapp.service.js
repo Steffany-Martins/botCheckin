@@ -232,21 +232,21 @@ const MessageTemplates = {
    * Staff menu
    */
   staffMenu(name) {
-    return `👤 *Ola, ${name}!*\n\n📋 Selecione uma opção:\n\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n5️⃣ Histórico de Hoje\n6️⃣ Ver Todo Histórico\n\n0️⃣ Sair\n9️⃣ Atualizar menu`;
+    return `👤 *Ola, ${name}!*\n\n📋 Selecione uma opção:\n\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n5️⃣ Histórico de Hoje\n6️⃣ Ver Todo Histórico\n7️⃣ Exportar PDF\n\n0️⃣ Sair\n9️⃣ Atualizar menu`;
   },
 
   /**
    * Manager menu - Full check-in + management
    */
   managerMenu(name) {
-    return `👔 *Ola, Gerente ${name}!*\n📋 Painel de Gestão:\n\n*Check-in Pessoal:*\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n5️⃣ Histórico de Hoje\n6️⃣ Ver Todo Histórico\n\n*Gestão de Equipe:*\n7️⃣ Ver Todos os Horários\n8️⃣ Buscar Usuário\n9️⃣ Definir Horas Semanais\n🔟 Editar Horários\n1️⃣1️⃣ Editar Categorias\n\n0️⃣ Sair`;
+    return `💫 *Ola, Gerente ${name}*\n📋 Painel de Gestão:\n\n*Check-in Pessoal:*\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n5️⃣ Histórico de Hoje\n6️⃣ Ver Todo Histórico\n7️⃣ Exportar PDF\n\n*Gestão de Equipe:*\n8️⃣ Ver Todos os Horários\n9️⃣ Buscar Usuário\n🔟 Definir Horas Semanais\n1️⃣1️⃣ Editar Horários\n1️⃣2️⃣ Editar Categorias\n\n0️⃣ Sair`;
   },
 
   /**
    * Supervisor menu - Full check-in + team management
    */
   supervisorMenu(name) {
-    return `👨‍💼 *Ola, Supervisor ${name}!*\n\n📋 Gestão de Equipe:\n\n*Check-in Pessoal:*\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n\n*Equipe:*\n5️⃣ Ver Equipe Ativa\n6️⃣ Histórico da Equipe\n7️⃣ Editar Horários\n\n*Meu Histórico:*\n8️⃣ Histórico de Hoje\n9️⃣ Ver Todo Histórico\n\n0️⃣ Sair`;
+    return `🔎 *Ola, Supervisor ${name}*\n\n📋 Gestão de Equipe:\n\n*Check-in Pessoal:*\n1️⃣ Check-in\n2️⃣ Iniciar Pausa\n3️⃣ Voltar da Pausa\n4️⃣ Fechar Expediente\n\n*Equipe:*\n5️⃣ Ver Equipe Ativa\n6️⃣ Histórico da Equipe\n7️⃣ Editar Horários\n\n*Meu Histórico:*\n8️⃣ Histórico de Hoje\n9️⃣ Ver Todo Histórico\n🔟 Exportar PDF\n\n0️⃣ Sair`;
   },
 
   /**
@@ -544,11 +544,11 @@ const MessageTemplates = {
     },
 
     wrongPassword() {
-      return '🔒 *Senha Incorreta*\n\nPara cargos administrativos é necessária a senha.\n\n💡 _Tente:_ LOGIN SENHA';
+      return '🔒 *Senha Incorreta*\n\nPara cargos administrativos é necessária a senha.\n\n💡 _Tente:_ A senha de administrador';
     },
 
     adminPasswordRequired() {
-      return '🔒 *Senha de Admin Necessária*\n\nPara registrar como manager ou supervisor, você precisa da senha administrativa.\n\n💡 _Formato:_ REGISTER Nome manager SENHA';
+      return '🔒 *Senha de Admin Necessária*\n\nPara registrar como manager ou supervisor, você precisa da senha administrativa.\n\n💡 _Formato:_ A senha de administrador';
     },
 
     unknownCommand() {
@@ -564,7 +564,14 @@ const MessageTemplates = {
     },
 
     addFormat() {
-      return '➕ *Como Adicionar Checkin Manual:*\n\nADD ID_USUARIO TIPO DATA LOCALIZACAO\n\n💡 _Exemplo:_\nADD 2 checkin 2024-01-15T08:30:00 Escritório';
+      return '➕ *Como Adicionar Check-in Manual:*\n\n' +
+        'Use o formato simples abaixo:\n\n' +
+        '*ADD ID_USUARIO TIPO HORA [DATA]*\n\n' +
+        '💡 _Exemplos:_\n' +
+        '• ADD 2 checkin 08:30 _(para hoje)_\n' +
+        '• ADD 2 checkout 18:00 15/01/2024 _(com data específica)_\n\n' +
+        'Tipos válidos: checkin, checkout, break, return\n\n' +
+        '0️⃣ Cancelar | 9️⃣ Menu Principal';
     },
 
     searchFormat() {
@@ -611,6 +618,11 @@ const MessageTemplates = {
 
     searchUser_results(results, searchTerm) {
       const lines = [`🔍 *Resultados para "${searchTerm}":*\n`];
+      if (!results || results.length === 0) {
+        lines.push(`Nenhum usuário encontrado.`);
+        return lines.join('\n');
+      }
+
       results.forEach((user, index) => {
         const roleEmoji = user.role === 'manager' ? '💫' : user.role === 'supervisor' ? '🔎' : '👤';
         const categories = user.categories ? ` | ${user.categories}` : '';
@@ -621,7 +633,7 @@ const MessageTemplates = {
         }
       });
 
-      lines.push(`\n💡 _Digite o número (1-${results.length})_`);
+      lines.push(`\n💡 _Digite o número (${results.length ? 1 : 0}-${results.length})_`);
       lines.push(`\n0️⃣ Voltar | 9️⃣ Menu Principal`);
 
       return lines.join('\n');
@@ -740,6 +752,7 @@ const MessageTemplates = {
 
       return `✏️ *Editar ${typeText} de ${userName}*\n\n⏰ Horário atual: *${currentTime}*\n\nEnvie o novo horário no formato HH:MM\n\n💡 _Exemplos:_\n• 08:00\n• 14:30\n• 18:15\n\n0️⃣ Cancelar | 9️⃣ Menu Principal`;
     },
+
 
     editHours_success(userName, checkinType, oldTime, newTime, editorName) {
       const typeText = {

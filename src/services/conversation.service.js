@@ -18,7 +18,8 @@ const ConversationType = {
   SEARCH_USER: 'search_user',
   SET_HOURS: 'set_hours',
   EDIT_CATEGORY: 'edit_category',
-  EDIT_HOURS: 'edit_hours'
+  EDIT_HOURS: 'edit_hours',
+  REPLACE_CHECKIN: 'replace_checkin'
 };
 
 /**
@@ -482,6 +483,87 @@ function clearAllConversations() {
   conversationStates.clear();
 }
 
+/**
+ * ================================================================
+ * REPLACE CHECKIN CONVERSATION
+ * ================================================================
+ */
+
+/**
+ * Start replace checkin conversation
+ * @param {string} phone - User phone number
+ * @param {object} existingCheckin - The existing checkin that was found
+ * @param {string} newType - The type user wants to create
+ * @param {string} location - Location for new checkin
+ */
+function startReplaceCheckin(phone, existingCheckin, newType, location = null) {
+  conversationStates.set(phone, {
+    type: ConversationType.REPLACE_CHECKIN,
+    step: 1,
+    startedAt: Date.now(),
+    existingCheckin,
+    newType,
+    location
+  });
+
+  const existingTime = new Date(existingCheckin.timestamp).toLocaleTimeString('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const typeText = {
+    checkin: 'check-in',
+    checkout: 'check-out',
+    break: 'pausa',
+    return: 'retorno'
+  };
+
+  return {
+    message: `⚠️ *Atenção!*\n\nVocê já tem um registro de *${typeText[existingCheckin.type]}* hoje às ${existingTime}.\n\nO que você deseja fazer?\n\n1️⃣ Substituir pelo novo horário\n2️⃣ Manter o registro atual\n\n💡 _Responda com 1 ou 2_`,
+    waitingInput: true
+  };
+}
+
+/**
+ * Process replace checkin - Step 1: User chooses to replace or keep
+ */
+function processReplaceCheckin_Step1(phone, input) {
+  const state = conversationStates.get(phone);
+  if (!state) return { error: 'NO_STATE' };
+
+  const choice = input.trim();
+
+  if (choice === '1') {
+    // User wants to replace
+    conversationStates.delete(phone);
+    return {
+      replace: true,
+      existingCheckinId: state.existingCheckin.id,
+      newType: state.newType,
+      location: state.location
+    };
+  } else if (choice === '2') {
+    // User wants to keep existing
+    conversationStates.delete(phone);
+    const existingTime = new Date(state.existingCheckin.timestamp).toLocaleTimeString('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    return {
+      replace: false,
+      message: `✅ *Registro mantido*\n\nSeu registro de *${state.existingCheckin.type}* às ${existingTime} foi mantido.`
+    };
+  } else {
+    return {
+      error: 'INVALID_CHOICE',
+      message: '❌ *Opção inválida*\n\nPor favor, responda:\n\n1️⃣ Substituir pelo novo horário\n2️⃣ Manter o registro atual'
+    };
+  }
+}
+
 module.exports = {
   ConversationType,
   isInConversation,
@@ -501,6 +583,8 @@ module.exports = {
   processEditHours_Step3,
   processEditHours_Step4,
   processEditHours_Step5,
+  startReplaceCheckin,
+  processReplaceCheckin_Step1,
   cancelConversation,
   clearAllConversations
 };

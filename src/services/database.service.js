@@ -324,6 +324,35 @@ const CheckinDB = {
     return data || [];
   },
 
+  async getTodayCheckinByType(userId, type) {
+    // Get today's date at midnight in Sao Paulo timezone
+    const today = new Date();
+    const saoPauloOffset = -3; // UTC-3
+    const utcDate = new Date(today.getTime() + (today.getTimezoneOffset() * 60000));
+    const saoPauloDate = new Date(utcDate.getTime() + (saoPauloOffset * 3600000));
+
+    // Set to start of day (00:00:00)
+    saoPauloDate.setHours(0, 0, 0, 0);
+    const startOfDay = saoPauloDate.toISOString();
+
+    const { data, error } = await supabase
+      .from('checkins')
+      .select('id, type, timestamp, location')
+      .eq('user_id', userId)
+      .eq('type', type)
+      .gte('timestamp', startOfDay)
+      .order('timestamp', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error getting today checkin by type:', error);
+      return null;
+    }
+
+    return data;
+  },
+
   async updateTimestamp(checkinId, newTimestamp) {
     const { data, error } = await supabase
       .from('checkins')

@@ -1,6 +1,7 @@
 const { CheckinDB, UserDB } = require('./database.service');
 const { sendWhatsAppMessage, MessageTemplates } = require('./whatsapp.service');
 const { verifyLocation } = require('../utils/location');
+const pdfService = require('./pdf.service');
 
 /**
  * Record a checkin and notify supervisor if applicable
@@ -76,6 +77,18 @@ async function getUserHistory(userId, limit = 50) {
 }
 
 /**
+ * Get user's checkin history for today only
+ */
+async function getTodayHistory(userId) {
+  const records = await CheckinDB.getTodayHistory(userId);
+
+  return {
+    records: records,
+    hasMore: false
+  };
+}
+
+/**
  * Get all users with their schedules
  */
 async function getAllSchedules() {
@@ -147,14 +160,53 @@ async function addManualCheckin(userId, type, timestamp, location = null) {
   }
 }
 
+/**
+ * Export user's full history as PDF
+ * @param {number} userId - User ID
+ * @returns {Promise<Object>} Object with filepath or error
+ */
+async function exportHistoryPDF(userId) {
+  try {
+    // Get user info
+    const user = await UserDB.findById(userId);
+    if (!user) {
+      return { success: false, error: 'USER_NOT_FOUND' };
+    }
+
+    // Get all history (no limit)
+    const records = await CheckinDB.getUserHistory(userId, 1000);
+
+    if (records.length === 0) {
+      return { success: false, error: 'NO_RECORDS' };
+    }
+
+    // Generate PDF
+    const filepath = await pdfService.generateHistoryPDF(user, records);
+
+    return {
+      success: true,
+      filepath,
+      recordCount: records.length
+    };
+  } catch (error) {
+    console.error('❌ Error exporting history to PDF:', error);
+    return {
+      success: false,
+      error: 'PDF_GENERATION_FAILED'
+    };
+  }
+}
+
 module.exports = {
   recordCheckin,
   getUserHistory,
+  getTodayHistory,
   getAllSchedules,
   searchUsers,
   getTeamStatus,
   getTeamHistory,
   updateCheckinTime,
   deleteCheckin,
-  addManualCheckin
+  addManualCheckin,
+  exportHistoryPDF
 };
